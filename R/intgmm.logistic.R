@@ -427,11 +427,11 @@ intgmm.binary<-function(
     if(is.null(beta_initial) & initial_with_type %in% c("ridge","lasso")){
         if(initial_with_type == "ridge"){initial_alpha=0}else{initial_alpha=1}
         if(pG == 1 & unique(G) == 1){
-            fit_initial<-cv.glmnet(x=cbind(X,A),y=y,alpha = initial_alpha,penalty.factor = fix_penalty,family="binomial")
+            fit_initial<-cv.glmnet(x=cbind(X,A),y=y,alpha = initial_alpha,penalty.factor = fix_penalty[c(Xid,Aid)],family="binomial")
             beta_initial<-c(coef.glmnet(fit_initial,s="lambda.min")[-1])
             beta_initial<-c(beta_initial,coef.glmnet(fit_initial,s="lambda.min")[1])
         }else if(pG > 1 & unique(G[,1])==1){
-            fit_initial<-cv.glmnet(x=cbind(X,A,G[,-1]),y=y,alpha = initial_alpha,penalty.factor = fix_penalty,family="binomial")
+            fit_initial<-cv.glmnet(x=cbind(X,A,G[,-1]),y=y,alpha = initial_alpha,penalty.factor = fix_penalty[c(Xid,Aid,Gid[-1])],family="binomial")
             beta_initial<-c(coef.glmnet(fit_initial,s="lambda.min")[-1])
             beta_initial<-c(beta_initial[c(Xid,Aid)],coef.glmnet(fit_initial,s="lambda.min")[1],beta_initial[c(Gid[-1])])
         }else{
