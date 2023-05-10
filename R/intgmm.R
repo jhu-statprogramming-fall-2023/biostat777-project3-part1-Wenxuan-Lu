@@ -1,4 +1,4 @@
-#' intgmm
+#' intgmm: integration with generalized method of moments(gmm).
 #'
 #' @details intgmm: integration with generalized method of moments(gmm).
 #'
@@ -154,7 +154,7 @@ intgmm<-function(
 
 
 
-#' cv.intgmm
+#' cv.intgmm: cross validtaion for intgmm(integration with generalized method of moments).
 #'
 #' @details cross validtaion for intgmm: integration with generalized method of moments(gmm).
 #'
