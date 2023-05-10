@@ -295,7 +295,6 @@ intgmm.linear<-function(
         validation_type<-"None"
         if(fix_lambda<0){stop("The fixed lambda should be nonnegative.")}
     }
-    print(validation_type)
 
     if(tune_ratio & !remove_penalty_X & !remove_penalty_A){
         if(is.null(ratio_range)){
