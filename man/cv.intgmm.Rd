@@ -100,31 +100,21 @@ When internal data sample size is large enough, use_sparseC = FALSE is recommend
 \item{seed.use}{The seed for  97.}
 }
 \value{
-beta The target coefficient estimation.
-
-lambda_list The lambda list for validation (cross validation or holdout validation).
-
-ratio_list The ratio list for validation (cross validation or holdout validation).
-
-holdout_mse The mean square error(mse) when family = "gaussian", and validation_type = "holdout".
-
-cv_mse The mean square error(mse) when family = "gaussian", and validation_type = "cv".
-
-holdout_auc The area under curve(auc) when family = "binomial", and validation_type = "holdout".
-
-cv_auc The area under curve(auc) when family = "binomial", and validation_type = "cv".
-
-lambda_min The selected best lambda.
-
-ratio_min The selected best ratio.
-
-corrected_pos For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
-
-nonzero_pos For estimated beta, the nonzero positions.
-
-pval For nonzero_pos, the calculated p values.
-
-nonzero_var For nonzero_pos, the calculated variances.
+\itemize{
+ \item{beta:} The target coefficient estimation.
+ \item{lambda_list:} The lambda list for validation (cross validation or holdout validation).
+ \item{ratio_list:} The ratio list for validation (cross validation or holdout validation).
+ \item{holdout_mse:} The mean square error(mse) when family = "gaussian", and validation_type = "holdout".
+ \item{cv_mse:} The mean square error(mse) when family = "gaussian", and validation_type = "cv".
+ \item{holdout_auc:} The area under curve(auc) when family = "binomial", and validation_type = "holdout".
+ \item{cv_auc:} The area under curve(auc) when family = "binomial", and validation_type = "cv".
+ \item{lambda_min:} The selected best lambda.
+ \item{ratio_min:} The selected best ratio.
+ \item{corrected_pos:} For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
+ \item{nonzero_pos:} For estimated beta, the nonzero positions.
+ \item{pval:} For nonzero_pos, the calculated p values.
+ \item{nonzero_var:} For nonzero_pos, the calculated variances.
+}
 }
 \description{
 cv.intgmm: cross validtaion for intgmm(integration with generalized method of moments).

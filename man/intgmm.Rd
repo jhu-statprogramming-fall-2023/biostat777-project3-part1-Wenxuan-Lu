@@ -82,6 +82,16 @@ nonzero_pos For estimated beta, the nonzero positions.
 pval For nonzero_pos, the calculated p values.
 
 nonzero_var For nonzero_pos, the calculated variances.
+
+\itemize{
+ \item{beta:} The target coefficient estimation.
+ \item{fix_lambda:} The output lambda.
+ \item{fix_ratio:} The output ratio.
+ \item{corrected_pos:} For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
+ \item{nonzero_pos:} For estimated beta, the nonzero positions.
+ \item{pval:} For nonzero_pos, the calculated p values.
+ \item{nonzero_var:} For nonzero_pos, the calculated variances.
+}
 }
 \description{
 intgmm: integration with generalized method of moments(gmm).

@@ -36,7 +36,15 @@
 #' @return nonzero_pos For estimated beta, the nonzero positions.
 #' @return pval For nonzero_pos, the calculated p values.
 #' @return nonzero_var For nonzero_pos, the calculated variances.
-#'
+#' @return \itemize{
+#'  \item{beta:} The target coefficient estimation.
+#'  \item{fix_lambda:} The output lambda.
+#'  \item{fix_ratio:} The output ratio.
+#'  \item{corrected_pos:} For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
+#'  \item{nonzero_pos:} For estimated beta, the nonzero positions.
+#'  \item{pval:} For nonzero_pos, the calculated p values.
+#'  \item{nonzero_var:} For nonzero_pos, the calculated variances.
+#' }
 #'
 #' @import glmnet
 #' @import stats
@@ -196,19 +204,21 @@ intgmm<-function(
 #' When internal data sample size is large enough, use_sparseC = FALSE is recommended.
 #' @param seed.use The seed for  97.
 #'
-#' @return beta The target coefficient estimation.
-#' @return lambda_list The lambda list for validation (cross validation or holdout validation).
-#' @return ratio_list The ratio list for validation (cross validation or holdout validation).
-#' @return holdout_mse The mean square error(mse) when family = "gaussian", and validation_type = "holdout".
-#' @return cv_mse The mean square error(mse) when family = "gaussian", and validation_type = "cv".
-#' @return holdout_auc The area under curve(auc) when family = "binomial", and validation_type = "holdout".
-#' @return cv_auc The area under curve(auc) when family = "binomial", and validation_type = "cv".
-#' @return lambda_min The selected best lambda.
-#' @return ratio_min The selected best ratio.
-#' @return corrected_pos For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
-#' @return nonzero_pos For estimated beta, the nonzero positions.
-#' @return pval For nonzero_pos, the calculated p values.
-#' @return nonzero_var For nonzero_pos, the calculated variances.
+#' @return \itemize{
+#'  \item{beta:} The target coefficient estimation.
+#'  \item{lambda_list:} The lambda list for validation (cross validation or holdout validation).
+#'  \item{ratio_list:} The ratio list for validation (cross validation or holdout validation).
+#'  \item{holdout_mse:} The mean square error(mse) when family = "gaussian", and validation_type = "holdout".
+#'  \item{cv_mse:} The mean square error(mse) when family = "gaussian", and validation_type = "cv".
+#'  \item{holdout_auc:} The area under curve(auc) when family = "binomial", and validation_type = "holdout".
+#'  \item{cv_auc:} The area under curve(auc) when family = "binomial", and validation_type = "cv".
+#'  \item{lambda_min:} The selected best lambda.
+#'  \item{ratio_min:} The selected best ratio.
+#'  \item{corrected_pos:} For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
+#'  \item{nonzero_pos:} For estimated beta, the nonzero positions.
+#'  \item{pval:} For nonzero_pos, the calculated p values.
+#'  \item{nonzero_var:} For nonzero_pos, the calculated variances.
+#' }
 #'
 #'
 #' @import glmnet
