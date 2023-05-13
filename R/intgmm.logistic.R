@@ -396,7 +396,7 @@ intgmm.binary<-function(
     pX<-ncol(X)
     if(is.null(A)){pA<-0}else{pA<-ncol(A)}
     if(is.null(G)){pG<-0}else{pG<-ncol(G)}
-    if(nX<2*pX+pA+pG){use_sparseC<-TRUE}
+    #if(nX<2*pX+pA+pG){use_sparseC<-TRUE}
     if (summary_type == "uni"){
         pseudo_Xy <- pseudo_Xy_binary_univ
         inv_C_func <- final_var_U_beta_theta_hat_func_binary_univ
