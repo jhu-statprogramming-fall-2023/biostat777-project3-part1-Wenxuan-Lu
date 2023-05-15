@@ -367,6 +367,7 @@ intgmm.binary<-function(
         nfolds = 10,
         holdout_p = 0.2,
         use_sparseC = FALSE,
+        shrink = FALSE,
         seed.use = 97
 ){
     set.seed(seed.use)
@@ -463,7 +464,9 @@ intgmm.binary<-function(
     # Fit final model
     fit_final<-cv.glmnet(x= pseudo_X,y= pseudo_y,standardize=F,
                          intercept=F,alpha = final_alpha,penalty.factor = w_adaptive)
-    if(is.null(lambda_list)){lambda_list<-fit_final$lambda[1:50]}
+    if(is.null(lambda_list)){lambda_list<-fit_final$lambda
+    if(shrink){lambda_list<-lambda_list[1:50]}
+    }
     if(!is.null(fix_lambda)){
         validation_type<-"None"
         if(fix_lambda<0){stop("The fixed lambda should be nonnegative.")}

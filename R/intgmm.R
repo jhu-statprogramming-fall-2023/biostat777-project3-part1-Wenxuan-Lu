@@ -295,6 +295,7 @@ cv.intgmm<-function(
         nfolds = 10,
         holdout_p = 0.2,
         use_sparseC = FALSE,
+        shrink=FALSE,
         seed.use = 97
 ){
     if(!family %in% c("gaussian","binomial")){
@@ -309,7 +310,7 @@ cv.intgmm<-function(
                            fix_ratio,ratio_lower,ratio_upper,
                            ratio_count,ratio_range,gamma_adaptivelasso,
                            inference,validation_type,
-                           nfolds,holdout_p,use_sparseC,seed.use)
+                           nfolds,holdout_p,use_sparseC,shrink,seed.use)
     }else{
         res<-intgmm.binary(y,X,A,G,study_info,summary_type,penalty_type,
                            initial_with_type,beta_initial,
@@ -318,7 +319,7 @@ cv.intgmm<-function(
                            fix_ratio,ratio_lower,ratio_upper,
                            ratio_count,ratio_range,gamma_adaptivelasso,
                            inference,validation_type,nfolds,holdout_p,
-                           use_sparseC,seed.use)
+                           use_sparseC,shrink,seed.use)
     }
     return(res)
 }
