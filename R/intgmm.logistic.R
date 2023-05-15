@@ -396,7 +396,7 @@ intgmm.binary<-function(
     pX<-ncol(X)
     if(is.null(A)){pA<-0}else{pA<-ncol(A)}
     if(is.null(G)){pG<-0}else{pG<-ncol(G)}
-    #if(nX<2*pX+pA+pG){use_sparseC<-TRUE}
+    if(nX<2*pX+pA+pG){use_sparseC<-TRUE}
     if (summary_type == "uni"){
         pseudo_Xy <- pseudo_Xy_binary_univ
         inv_C_func <- final_var_U_beta_theta_hat_func_binary_univ
@@ -463,7 +463,7 @@ intgmm.binary<-function(
     # Fit final model
     fit_final<-cv.glmnet(x= pseudo_X,y= pseudo_y,standardize=F,
                          intercept=F,alpha = final_alpha,penalty.factor = w_adaptive)
-    if(is.null(lambda_list)){lambda_list<-fit_final$lambda}
+    if(is.null(lambda_list)){lambda_list<-fit_final$lambda[1:50]}
     if(!is.null(fix_lambda)){
         validation_type<-"None"
         if(fix_lambda<0){stop("The fixed lambda should be nonnegative.")}

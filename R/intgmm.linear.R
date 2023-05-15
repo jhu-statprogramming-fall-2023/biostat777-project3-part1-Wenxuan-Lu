@@ -221,7 +221,7 @@ intgmm.linear<-function(
     nXext<-study_info[[1]]$Sample_size
     pX<-ncol(X)
     if(is.null(A)){pA<-0}else{pA<-ncol(A)}
-    #if(nX<2*pX+pA){use_sparseC<-TRUE}
+    if(nX<2*pX+pA){use_sparseC<-TRUE}
     XA<-cbind(X,A)
     Xid<-1:pX
     Aid<-(pX+1):(pX+pA)
