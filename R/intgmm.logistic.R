@@ -211,13 +211,13 @@ pseudo_Xy_binary_univ<-function(C_half,
 
 ## cross validation helper function 1
 
-cv_auc_lambda_ratio_func<-function(index_fold,X,A,G,y,
+cv_dev_lambda_ratio_func<-function(index_fold,X,A,G,y,
                                    C_half,beta_initial,hat_thetaG,
                                    study_info,lambda_list,
                                    ratio_range,pX,pA,pG,
                                    w_adaptive,final_alpha,
                                    pseudo_Xy){
-    auc_lam_ratio<-lapply(1:length(index_fold), function(cur_fold){
+    dev_lam_ratio<-lapply(1:length(index_fold), function(cur_fold){
         index_test<-index_fold[[cur_fold]]
         Xtrain<-X[-index_test,]
         Xtest<-X[index_test,]
@@ -241,7 +241,7 @@ cv_auc_lambda_ratio_func<-function(index_fold,X,A,G,y,
         initial_sf_train<-nrow(Xtrain)/sqrt(nrow(pseudo_Xy_list_train$pseudo_X))
         pseudo_X_train<-pseudo_Xy_list_train$pseudo_X/initial_sf_train
         pseudo_y_train<-pseudo_Xy_list_train$pseudo_y/initial_sf_train
-        auc_lam_ratio_fold<-sapply(lambda_list,function(cur_lam){
+        dev_lam_ratio_fold<-sapply(lambda_list,function(cur_lam){
             sapply(ratio_range,function(cur_ratio){
                 ratio_vec<-c(rep(cur_ratio,pX),rep(1,pA+pG))
                 w_adaptive_ratio<-w_adaptive*ratio_vec
@@ -250,25 +250,27 @@ cv_auc_lambda_ratio_func<-function(index_fold,X,A,G,y,
                                penalty.factor = w_adaptive_ratio,
                                lambda = cur_lam)
                 cur_beta<-coef.glmnet(cv_fit)[-1]
-                suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta)),direction = "<")))
-                cur_auc
+                probtest <- c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta))
+                cur_dev <- sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
+                #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta)),direction = "<")))
+                cur_dev
             })
         }) # row is ratio_range & col is lambda_list
-        auc_lam_ratio_fold
+        dev_lam_ratio_fold
     })
 
-    sum_auc_lam_ratio<-Reduce(`+`, auc_lam_ratio)
+    sum_dev_lam_ratio<-Reduce(`+`, dev_lam_ratio)
 }
 
 
 ## cross validation helper function 2
 
-cv_auc_lambda_func<-function(index_fold,X,A,G,y,
+cv_dev_lambda_func<-function(index_fold,X,A,G,y,
                              C_half,beta_initial,hat_thetaG,
                              study_info,lambda_list,
                              w_adaptive,final_alpha,
                              pseudo_Xy){
-    auc_fold<-sapply(1:length(index_fold), function(cur_fold){
+    dev_fold<-sapply(1:length(index_fold), function(cur_fold){
         index_test<-index_fold[[cur_fold]]
         Xtrain<-X[-index_test,]
         Xtest<-X[index_test,]
@@ -292,26 +294,28 @@ cv_auc_lambda_func<-function(index_fold,X,A,G,y,
         initial_sf_train<-nrow(Xtrain)/sqrt(nrow(pseudo_Xy_list_train$pseudo_X))
         pseudo_X_train<-pseudo_Xy_list_train$pseudo_X/initial_sf_train
         pseudo_y_train<-pseudo_Xy_list_train$pseudo_y/initial_sf_train
-        auc_lam<-sapply(lambda_list,function(cur_lam){
+        dev_lam<-sapply(lambda_list,function(cur_lam){
             cv_fit<-glmnet(x= (pseudo_X_train),y= (pseudo_y_train),
                            standardize=F,intercept=F,
                            alpha = final_alpha,penalty.factor = w_adaptive,lambda = cur_lam)
             cur_beta<-coef.glmnet(cv_fit)[-1]
-            suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta)),direction = "<")))
+            probtest <- c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta))
+            cur_dev <- sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
+            #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta)),direction = "<")))
             #sum((cbind(Xtest,Atest,Gtest)%*%cur_beta - ytest)^2)
-            cur_auc
+            cur_dev
         })
-        auc_lam
+        dev_lam
     })
-    rowMeans(auc_fold)
+    rowMeans(dev_fold)
 }
 
 ## cross validation helper function 3
 
-holdout_auc_lambda_ratio_func<-function(lambda_list,ratio_range,pX,pA,pG,
+holdout_dev_lambda_ratio_func<-function(lambda_list,ratio_range,pX,pA,pG,
                                         w_adaptive,pseudo_X_train,pseudo_y_train,
                                         final_alpha,Xtest,Atest,Gtest,ytest){
-    auc_lam_ratio<-sapply(lambda_list,function(cur_lam){
+    dev_lam_ratio<-sapply(lambda_list,function(cur_lam){
         sapply(ratio_range,function(cur_ratio){
             ratio_vec<-c(rep(cur_ratio,pX),rep(1,pA+pG))
             w_adaptive_ratio<-w_adaptive*ratio_vec
@@ -320,28 +324,32 @@ holdout_auc_lambda_ratio_func<-function(lambda_list,ratio_range,pX,pA,pG,
                            penalty.factor = w_adaptive_ratio,
                            lambda = cur_lam)
             cur_beta<-coef.glmnet(cv_fit)[-1]
-            suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta)),direction = "<")))
-            cur_auc
+            probtest <- c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta))
+            cur_dev <- sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
+            #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta)),direction = "<")))
+            cur_dev
         })
     }) # row is ratio_range & col is lambda_list
-    sum_auc_lam_ratio<-Reduce(`+`, auc_lam_ratio)
+    sum_dev_lam_ratio<-Reduce(`+`, dev_lam_ratio)
 }
 
 
 ## cross validation helper function 4
 
-holdout_auc_lambda_func<-function(lambda_list,pseudo_X_train,pseudo_y_train,
+holdout_dev_lambda_func<-function(lambda_list,pseudo_X_train,pseudo_y_train,
                                   final_alpha,w_adaptive,Xtest,Atest,Gtest,ytest){
-    auc_lam<-sapply(lambda_list,function(cur_lam){
+    dev_lam<-sapply(lambda_list,function(cur_lam){
         cv_fit<-glmnet(x= (pseudo_X_train),y= (pseudo_y_train),
                        standardize=F,intercept=F,
                        alpha = final_alpha,penalty.factor = w_adaptive,
                        lambda = cur_lam)
         cur_beta<-coef.glmnet(cv_fit)[-1]
-        suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta)),direction = "<")))
-        cur_auc
+        probtest <- c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta))
+        cur_dev <- sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
+        #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta)),direction = "<")))
+        cur_dev
     })
-    auc_lam
+    dev_lam
 }
 
 intgmm.binary<-function(
@@ -367,7 +375,6 @@ intgmm.binary<-function(
         nfolds = 10,
         holdout_p = 0.2,
         use_sparseC = FALSE,
-        shrink = FALSE,
         seed.use = 97
 ){
     set.seed(seed.use)
@@ -464,9 +471,7 @@ intgmm.binary<-function(
     # Fit final model
     fit_final<-cv.glmnet(x= pseudo_X,y= pseudo_y,standardize=F,
                          intercept=F,alpha = final_alpha,penalty.factor = w_adaptive)
-    if(is.null(lambda_list)){lambda_list<-fit_final$lambda
-    if(shrink){lambda_list<-lambda_list[1:50]}
-    }
+    if(is.null(lambda_list)){lambda_list<-fit_final$lambda}
     if(!is.null(fix_lambda)){
         validation_type<-"None"
         if(fix_lambda<0){stop("The fixed lambda should be nonnegative.")}
@@ -518,16 +523,16 @@ intgmm.binary<-function(
 
 
         if(tune_ratio){
-            holdout_auc<-holdout_auc_lambda_ratio_func(lambda_list,ratio_range,pX,pA,pG,
+            holdout_dev<-holdout_dev_lambda_ratio_func(lambda_list,ratio_range,pX,pA,pG,
                                    w_adaptive,pseudo_X_train,pseudo_y_train,
                                    final_alpha,Xtest,Atest,Gtest,ytest)
-            ids<-which(holdout_auc==max(holdout_auc),arr.ind = TRUE)
+            ids<-which(holdout_dev==min(holdout_dev),arr.ind = TRUE)
             final.ratio.min<-ratio_range[ids[1]]
             final.lambda.min<-lambda_list[ids[2]]
         }else{
-            holdout_auc<-holdout_auc_lambda_func(lambda_list,pseudo_X_train,pseudo_y_train,
+            holdout_dev<-holdout_dev_lambda_func(lambda_list,pseudo_X_train,pseudo_y_train,
                                  final_alpha,w_adaptive,Xtest,Atest,Gtest,ytest)
-            final.lambda.min<-lambda_list[which.max(holdout_auc)]
+            final.lambda.min<-lambda_list[which.min(holdout_dev)]
             final.ratio.min<-1
         }
         ratio_vec<-c(rep(final.ratio.min,pX),rep(1,pA+pG))
@@ -540,7 +545,7 @@ intgmm.binary<-function(
         return_list<-list("beta"=beta,#[-c((length(beta)-pG+1):length(beta)) ],
                           "lambda_list"=lambda_list,
                           "ratio_list"=ratio_range,
-                          "holdout_auc"= holdout_auc,
+                          "holdout_dev"= holdout_dev,
                           "lambda_min"=final.lambda.min,
                           "ratio_min"=final.ratio.min)
 
@@ -548,20 +553,20 @@ intgmm.binary<-function(
         index_fold<-createFolds(y,k = nfolds)
 
         if(tune_ratio){
-            cv_auc<-cv_auc_lambda_ratio_func(index_fold,X,A,G,y,
+            cv_dev<-cv_dev_lambda_ratio_func(index_fold,X,A,G,y,
                                              C_half,beta_initial,hat_thetaG,
                                              study_info,lambda_list,
                                              ratio_range,pX,pA,pG,
                                              w_adaptive,final_alpha,pseudo_Xy)
-            ids<-which(cv_auc==max(cv_auc),arr.ind = TRUE)
+            ids<-which(cv_dev==min(cv_dev),arr.ind = TRUE)
             final.ratio.min<-ratio_range[ids[1]]
             final.lambda.min<-lambda_list[ids[2]]
         }else{
-            cv_auc<-cv_auc_lambda_func(index_fold,X,A,G,y,
+            cv_dev<-cv_dev_lambda_func(index_fold,X,A,G,y,
                                        C_half,beta_initial,hat_thetaG,
                                        study_info,lambda_list,
                                        w_adaptive,final_alpha,pseudo_Xy)
-            final.lambda.min<-lambda_list[which.max(cv_auc)]
+            final.lambda.min<-lambda_list[which.min(cv_dev)]
             final.ratio.min<-1
         }
         ratio_vec<-c(rep(final.ratio.min,pX),rep(1,pA+pG))
@@ -575,7 +580,7 @@ intgmm.binary<-function(
         return_list<-list("beta"=beta,#[-c((length(beta)-pG+1):length(beta)) ],
                           "lambda_list"=lambda_list,
                           "ratio_list"=ratio_range,
-                          "cv_auc"=cv_auc,
+                          "cv_dev"=cv_dev,
                           "lambda_min"=final.lambda.min,
                           "ratio_min"=final.ratio.min)
     }

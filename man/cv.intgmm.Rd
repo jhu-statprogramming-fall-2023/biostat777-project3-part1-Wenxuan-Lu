@@ -106,8 +106,8 @@ When internal data sample size is large enough, use_sparseC = FALSE is recommend
  \item{ratio_list:} The ratio list for validation (cross validation or holdout validation).
  \item{holdout_mse:} The mean square error(mse) when family = "gaussian", and validation_type = "holdout".
  \item{cv_mse:} The mean square error(mse) when family = "gaussian", and validation_type = "cv".
- \item{holdout_auc:} The area under curve(auc) when family = "binomial", and validation_type = "holdout".
- \item{cv_auc:} The area under curve(auc) when family = "binomial", and validation_type = "cv".
+ \item{holdout_dev:} The deviance(dev) when family = "binomial", and validation_type = "holdout".
+ \item{cv_dev:} The deviance(dev) when family = "binomial", and validation_type = "cv".
  \item{lambda_min:} The selected best lambda.
  \item{ratio_min:} The selected best ratio.
  \item{corrected_pos:} For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).

@@ -51,7 +51,6 @@
 #' @importFrom caret createFolds createDataPartition
 #' @importFrom locfit expit
 #' @importFrom corpcor fast.svd
-#' @importFrom pROC auc
 #' @importFrom magic adiag
 #' @importFrom MASS ginv
 #' @export
@@ -210,8 +209,8 @@ intgmm<-function(
 #'  \item{ratio_list:} The ratio list for validation (cross validation or holdout validation).
 #'  \item{holdout_mse:} The mean square error(mse) when family = "gaussian", and validation_type = "holdout".
 #'  \item{cv_mse:} The mean square error(mse) when family = "gaussian", and validation_type = "cv".
-#'  \item{holdout_auc:} The area under curve(auc) when family = "binomial", and validation_type = "holdout".
-#'  \item{cv_auc:} The area under curve(auc) when family = "binomial", and validation_type = "cv".
+#'  \item{holdout_dev:} The deviance(dev) when family = "binomial", and validation_type = "holdout".
+#'  \item{cv_dev:} The deviance(dev) when family = "binomial", and validation_type = "cv".
 #'  \item{lambda_min:} The selected best lambda.
 #'  \item{ratio_min:} The selected best ratio.
 #'  \item{corrected_pos:} For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
@@ -226,7 +225,6 @@ intgmm<-function(
 #' @importFrom caret createFolds createDataPartition
 #' @importFrom locfit expit
 #' @importFrom corpcor fast.svd
-#' @importFrom pROC auc
 #' @importFrom magic adiag
 #' @importFrom MASS ginv
 #' @export
@@ -295,7 +293,6 @@ cv.intgmm<-function(
         nfolds = 10,
         holdout_p = 0.2,
         use_sparseC = FALSE,
-        shrink=FALSE,
         seed.use = 97
 ){
     if(!family %in% c("gaussian","binomial")){
@@ -310,7 +307,7 @@ cv.intgmm<-function(
                            fix_ratio,ratio_lower,ratio_upper,
                            ratio_count,ratio_range,gamma_adaptivelasso,
                            inference,validation_type,
-                           nfolds,holdout_p,use_sparseC,shrink,seed.use)
+                           nfolds,holdout_p,use_sparseC,seed.use)
     }else{
         res<-intgmm.binary(y,X,A,G,study_info,summary_type,penalty_type,
                            initial_with_type,beta_initial,
@@ -319,7 +316,7 @@ cv.intgmm<-function(
                            fix_ratio,ratio_lower,ratio_upper,
                            ratio_count,ratio_range,gamma_adaptivelasso,
                            inference,validation_type,nfolds,holdout_p,
-                           use_sparseC,shrink,seed.use)
+                           use_sparseC,seed.use)
     }
     return(res)
 }
