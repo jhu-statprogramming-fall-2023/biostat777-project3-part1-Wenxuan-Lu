@@ -251,7 +251,7 @@ cv_dev_lambda_ratio_func<-function(index_fold,X,A,G,y,
                                lambda = cur_lam)
                 cur_beta<-coef.glmnet(cv_fit)[-1]
                 probtest <- c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta))
-                cur_dev <- sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
+                cur_dev <- -2*sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
                 #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta)),direction = "<")))
                 cur_dev
             })
@@ -300,7 +300,7 @@ cv_dev_lambda_func<-function(index_fold,X,A,G,y,
                            alpha = final_alpha,penalty.factor = w_adaptive,lambda = cur_lam)
             cur_beta<-coef.glmnet(cv_fit)[-1]
             probtest <- c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta))
-            cur_dev <- sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
+            cur_dev <- -2*sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
             #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta)),direction = "<")))
             #sum((cbind(Xtest,Atest,Gtest)%*%cur_beta - ytest)^2)
             cur_dev
@@ -325,7 +325,7 @@ holdout_dev_lambda_ratio_func<-function(lambda_list,ratio_range,pX,pA,pG,
                            lambda = cur_lam)
             cur_beta<-coef.glmnet(cv_fit)[-1]
             probtest <- c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta))
-            cur_dev <- sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
+            cur_dev <- -2*sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
             #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta)),direction = "<")))
             cur_dev
         })
@@ -345,7 +345,7 @@ holdout_dev_lambda_func<-function(lambda_list,pseudo_X_train,pseudo_y_train,
                        lambda = cur_lam)
         cur_beta<-coef.glmnet(cv_fit)[-1]
         probtest <- c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta))
-        cur_dev <- sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
+        cur_dev <- -2*sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
         #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta)),direction = "<")))
         cur_dev
     })
