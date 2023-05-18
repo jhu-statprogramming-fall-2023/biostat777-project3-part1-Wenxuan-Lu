@@ -290,7 +290,10 @@ tlgmm.linear<-function(
     # Fit final model
     fit_final<-cv.glmnet(x= pseudo_X,y= pseudo_y,standardize=F,
                          intercept=F,alpha = final_alpha,penalty.factor = w_adaptive)
-    if(is.null(lambda_list)){lambda_list<-fit_final$lambda}
+    if(is.null(lambda_list)){
+        lambda_list<-fit_final$lambda
+        lambda_list<-lambda_list[!is.na(lambda_list)]
+    }
     if(!is.null(fix_lambda)){
         validation_type<-"None"
         if(fix_lambda<0){stop("The fixed lambda should be nonnegative.")}
