@@ -163,7 +163,7 @@ holdout_mse_lambda_ratio_func<-function(lambda_list,ratio_range,pX,pA,
     mse_lam_ratio
 }
 
-intgmm.linear<-function(
+tlgmm.linear<-function(
         y,X,A=NULL,
         study_info=NULL,
         summary_type = "multi",

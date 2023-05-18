@@ -1,6 +1,6 @@
-Package: intgmm
+Package: tlgmm
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Transfer Learning via Generalized Method of Moments
 Version: 0.1.0
 Authors@R: c(
   person(given = "Ruzhang", family = "Zhao", email = "ruzhangzhao@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-3420-5771"))

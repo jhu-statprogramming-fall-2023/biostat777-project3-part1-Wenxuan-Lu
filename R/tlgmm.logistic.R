@@ -352,7 +352,7 @@ holdout_dev_lambda_func<-function(lambda_list,pseudo_X_train,pseudo_y_train,
     dev_lam
 }
 
-intgmm.binary<-function(
+tlgmm.binary<-function(
         y,X,A=NULL,G=1,
         study_info=NULL,
         summary_type = "multi",
