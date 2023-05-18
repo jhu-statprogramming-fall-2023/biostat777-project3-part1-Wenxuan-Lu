@@ -2,14 +2,14 @@
 #'
 #' @details tlgmm: Transfer Learning via generalized method of moments(GMM).
 #'
-#' @param y The y for response variable, which can be continouse or binary.
+#' @param y The y for response variable, which can be continous or binary.
 #' @param X The matched features for internal and external data.
-#' @param A The additional features only in internal data, the default is NULL.
+#' @param Z The mismatched features only in internal data, the default is NULL.
 #' @param study_info The summary statistics for X only from external data,
 #' which can be summarized in the type of multivariate version or univariate version.
 #' @param summary_type The summary statistics type, chosen from c("multi","uni"), where the default is "multi".
 #' @param family The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".
-#' @param G Usually used in "binomial" family, e.g. the intercept term for logistic regression, where the default is 1.
+#' @param A Usually used in "binomial" family, e.g. the intercept term for logistic regression, where the default is 1.
 #' Usually not used in "gaussian" family.
 #' G are the features working for adjustment in reduced model, but G is not summarized in summary statistics(input:study_info).
 #' @param penalty_type The penalty type for tlgmm, chosen from c("lasso","adaptivelasso","ridge"). The default is "lasso".
@@ -19,7 +19,7 @@
 #' E.g., one may input tlgmm result as beta_initial for more rounds to refine the final estimation.
 #' The default is NULL, and internal data is used for initial estimation.
 #' @param remove_penalty_X Not penalize X if it is TRUE. The default is FALSE.
-#' @param remove_penalty_A Not penalize A if it is TRUE. The default is FALSE.
+#' @param remove_penalty_Z Not penalize Z if it is TRUE. The default is FALSE.
 #' @param lambda Without cross validation, fix the lambda. The default is NULL.
 #' @param ratio The fixed ratio of X for bi-lambda strategy. The default is NULL. If it is NULL, select the best ratio via cross validation or holdout validation.
 #' @param gamma_adaptivelasso The gamma for adaptive lasso. Select from c(1/2,1,2). The default is 1/2.
@@ -58,16 +58,16 @@
 #' @examples
 #' set.seed(1)
 #' X<-matrix(rnorm(18000),900,20)
-#' A<-matrix(rnorm(2700),900,3)
+#' Z<-matrix(rnorm(2700),900,3)
 #' X<-scale(X)
-#' A<-scale(A)
-#' coefXA<-c(rep(0,23))
-#' coefXA[1:3]<-0.5
-#' coefXA[21:22]<-0.5
+#' Z<-scale(Z)
+#' coefXZ<-c(rep(0,23))
+#' coefXZ[1:3]<-0.5
+#' coefXZ[21:22]<-0.5
 #' internal_index<-1:100
 #' external_index<-101:900
-#' y<-cbind(X,A)%*%coefXA+rnorm(900,0,1)
-#' #y_binary<-rbinom(n=900,size=1,prob=locfit::expit(cbind(X,A)%*%coefXA))
+#' y<-cbind(X,Z)%*%coefXZ+rnorm(900,0,1)
+#' #y_binary<-rbinom(n=900,size=1,prob=locfit::expit(cbind(X,Z)%*%coefXZ))
 #' study_info_multi<-list()
 #' reslm<-lm(y~.,data = data.frame(y=y[external_index],X[external_index,]))
 #' study.m = list(Coeff=reslm$coefficients[-1],
@@ -87,25 +87,25 @@
 #'     summary_type = "multi",study_info = study_info_multi,lambda=0,use_sparseC = TRUE)
 #' res_tlgmm_uni<-tlgmm(y[internal_index],X[internal_index,],A[internal_index,],
 #'     summary_type = "uni",study_info = study_info_uni,lambda=0,use_sparseC = TRUE)
-#'     ee_lasso<-round(sum((coefXA-coef.glmnet(res_glm)[-1])^2),4)
-#' ee_tlgmm_lasso_multi<-round(sum((coefXA-res_tlgmm_multi$beta)^2),4)
-#' ee_tlgmm_lasso_uni<-round(sum((coefXA-res_tlgmm_uni$beta)^2),4)
+#'     ee_lasso<-round(sum((coefXZ-coef.glmnet(res_glm)[-1])^2),4)
+#' ee_tlgmm_lasso_multi<-round(sum((coefXZ-res_tlgmm_multi$beta)^2),4)
+#' ee_tlgmm_lasso_uni<-round(sum((coefXZ-res_tlgmm_uni$beta)^2),4)
 #' print(paste0("Estimation Error: ","lasso(",ee_lasso,"); tlgmm_lasso_multi(",
 #'              ee_tlgmm_lasso_multi,"); tlgmm_lasso_uni(",ee_tlgmm_lasso_uni,")"))
 #'
 #'
 
 tlgmm<-function(
-        y,X,A=NULL,
+        y,X,Z=NULL,
         study_info=NULL,
         summary_type = "multi",
         family = "gaussian",
-        G=1,
+        A=1,
         penalty_type = "lasso",
         initial_with_type = "ridge",
         beta_initial = NULL,
         remove_penalty_X = FALSE,
-        remove_penalty_A = FALSE,
+        remove_penalty_Z = FALSE,
         #tune_ratio = TRUE,
         lambda = 0,
         #lambda_list = NULL,
@@ -137,19 +137,19 @@ tlgmm<-function(
         stop("Select family from c('gaussian','binomial')")
     }
     if(family == "gaussian"){
-        #warning("For gaussian family, no G is used. \n Just assume G is cancelled for full and reduced model.")
-        res<-tlgmm.linear(y,X,A,study_info,summary_type,penalty_type,
+        #warning("For gaussian family, no A is used. \n Just assume A is cancelled for full and reduced model.")
+        res<-tlgmm.linear(y,X,Z,study_info,summary_type,penalty_type,
                            initial_with_type,beta_initial,
-                           remove_penalty_X,remove_penalty_A,
+                           remove_penalty_X,remove_penalty_Z,
                            tune_ratio,fix_lambda,lambda_list,
                            fix_ratio,ratio_lower,ratio_upper,
                            ratio_count,ratio_range,gamma_adaptivelasso,
                            inference,validation_type,
                            nfolds,holdout_p,use_sparseC,seed.use)
     }else{
-        res<-tlgmm.binary(y,X,A,G,study_info,summary_type,penalty_type,
+        res<-tlgmm.binary(y,X,Z,A,study_info,summary_type,penalty_type,
                            initial_with_type,beta_initial,
-                           remove_penalty_X,remove_penalty_A,
+                           remove_penalty_X,remove_penalty_Z,
                            tune_ratio,fix_lambda,lambda_list,
                            fix_ratio,ratio_lower,ratio_upper,
                            ratio_count,ratio_range,gamma_adaptivelasso,
@@ -167,12 +167,12 @@ tlgmm<-function(
 #'
 #' @param y The y for response variable, which can be continouse or binary.
 #' @param X The matched features for internal and external data.
-#' @param A The additional features only in internal data, the default is NULL.
+#' @param Z The mismatched features only in internal data, the default is NULL.
 #' @param study_info The summary statistics for X only from external data,
 #' which can be summarized in the type of multivariate version or univariate version.
 #' @param summary_type The summary statistics type, chosen from c("multi","uni"), where the default is "multi".
 #' @param family The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".
-#' @param G Usually used in "binomial" family, e.g. the intercept term for logistic regression, where the default is 1.
+#' @param A Usually used in "binomial" family, e.g. the intercept term for logistic regression, where the default is 1.
 #' Usually not used in "gaussian" family.
 #' G are the features working for adjustment in reduced model, but G is not summarized in summary statistics(input:study_info).
 #' @param penalty_type The penalty type for tlgmm, chosen from c("lasso","adaptivelasso","ridge"). The default is "lasso".
@@ -182,7 +182,7 @@ tlgmm<-function(
 #' E.g., one may input tlgmm result as beta_initial for more rounds to refine the final estimation.
 #' The default is NULL, and internal data is used for initial estimation.
 #' @param remove_penalty_X Not penalize X if it is TRUE. The default is FALSE.
-#' @param remove_penalty_A Not penalize A if it is TRUE. The default is FALSE.
+#' @param remove_penalty_Z Not penalize Z if it is TRUE. The default is FALSE.
 #' @param tune_ratio Whether to use bi-lambda stratgey. The default is TRUE.
 #' @param fix_lambda Without cross validation, fix the lambda. The default is NULL.
 #' @param lambda_list Customize the input lambda list for validation. The default is NULL.
@@ -232,16 +232,16 @@ tlgmm<-function(
 #' @examples
 #' set.seed(1)
 #' X<-matrix(rnorm(18000),900,20)
-#' A<-matrix(rnorm(2700),900,3)
+#' Z<-matrix(rnorm(2700),900,3)
 #' X<-scale(X)
-#' A<-scale(A)
-#' coefXA<-c(rep(0,23))
-#' coefXA[1:3]<-0.5
-#' coefXA[21:22]<-0.5
+#' Z<-scale(Z)
+#' coefXZ<-c(rep(0,23))
+#' coefXZ[1:3]<-0.5
+#' coefXZ[21:22]<-0.5
 #' internal_index<-1:100
 #' external_index<-101:900
-#' y<-cbind(X,A)%*%coefXA+rnorm(900,0,1)
-#' #y_binary<-rbinom(n=900,size=1,prob=locfit::expit(cbind(X,A)%*%coefXA))
+#' y<-cbind(X,Z)%*%coefXZ+rnorm(900,0,1)
+#' #y_binary<-rbinom(n=900,size=1,prob=locfit::expit(cbind(X,Z)%*%coefXZ))
 #' study_info_multi<-list()
 #' reslm<-lm(y~.,data = data.frame(y=y[external_index],X[external_index,]))
 #' study.m = list(Coeff=reslm$coefficients[-1],
@@ -261,24 +261,24 @@ tlgmm<-function(
 #'     summary_type = "multi",study_info = study_info_multi,tune_ratio = FALSE,use_sparseC = TRUE)
 #' res_tlgmm_uni<-cv.tlgmm(y[internal_index],X[internal_index,],A[internal_index,],
 #'     summary_type = "uni",study_info = study_info_uni,tune_ratio = FALSE,use_sparseC = TRUE)
-#' ee_lasso<-round(sum((coefXA-coef.glmnet(res_glm,s="lambda.min")[-1])^2),4)
-#' ee_tlgmm_lasso_multi<-round(sum((coefXA-res_tlgmm_multi$beta)^2),4)
-#' ee_tlgmm_lasso_uni<-round(sum((coefXA-res_tlgmm_uni$beta)^2),4)
+#' ee_lasso<-round(sum((coefXZ-coef.glmnet(res_glm,s="lambda.min")[-1])^2),4)
+#' ee_tlgmm_lasso_multi<-round(sum((coefXZ-res_tlgmm_multi$beta)^2),4)
+#' ee_tlgmm_lasso_uni<-round(sum((coefXZ-res_tlgmm_uni$beta)^2),4)
 #' print(paste0("Estimation Error: ","lasso(",ee_lasso,"); tlgmm_lasso_multi(",
 #'              ee_tlgmm_lasso_multi,"); tlgmm_lasso_uni(",ee_tlgmm_lasso_uni,")"))
 #'
 #'
 cv.tlgmm<-function(
-        y,X,A=NULL,
+        y,X,Z=NULL,
         study_info=NULL,
         summary_type = "multi",
         family = "gaussian",
-        G=1,
+        A=1,
         penalty_type = "lasso",
         initial_with_type = "ridge",
         beta_initial = NULL,
         remove_penalty_X = FALSE,
-        remove_penalty_A = FALSE,
+        remove_penalty_Z = FALSE,
         tune_ratio = TRUE,
         fix_lambda = NULL,
         lambda_list = NULL,
@@ -299,19 +299,19 @@ cv.tlgmm<-function(
         stop("Select family from c('gaussian','binomial')")
     }
     if(family == "gaussian"){
-        #warning("For gaussian family, no G is used. \n Just assume G is cancelled for full and reduced model.")
-        res<-tlgmm.linear(y,X,A,study_info,summary_type,penalty_type,
+        #warning("For gaussian family, no A is used. \n Just assume A is cancelled for full and reduced model.")
+        res<-tlgmm.linear(y,X,Z,study_info,summary_type,penalty_type,
                            initial_with_type,beta_initial,
-                           remove_penalty_X,remove_penalty_A,
+                           remove_penalty_X,remove_penalty_Z,
                            tune_ratio,fix_lambda,lambda_list,
                            fix_ratio,ratio_lower,ratio_upper,
                            ratio_count,ratio_range,gamma_adaptivelasso,
                            inference,validation_type,
                            nfolds,holdout_p,use_sparseC,seed.use)
     }else{
-        res<-tlgmm.binary(y,X,A,G,study_info,summary_type,penalty_type,
+        res<-tlgmm.binary(y,X,Z,A,study_info,summary_type,penalty_type,
                            initial_with_type,beta_initial,
-                           remove_penalty_X,remove_penalty_A,
+                           remove_penalty_X,remove_penalty_Z,
                            tune_ratio,fix_lambda,lambda_list,
                            fix_ratio,ratio_lower,ratio_upper,
                            ratio_count,ratio_range,gamma_adaptivelasso,

@@ -1,10 +1,10 @@
 #pacman::p_load(expm,magic,glmnet,cluster,MASS,locfit,corpcor,caret,pROC,mvtnorm)
 # theta1 = thetaG theta2=theta
 # thetaG from G, theta from X, from summary statistics
-U_func_binary_univ<-function(X,A,G,y,beta,hat_thetaG,study_info){
-    XAG<-cbind(X,A,G)
-    expit_beta<-c(expit(XAG%*%beta))
-    u1<-crossprod((expit_beta-y),XAG)
+U_func_binary_univ<-function(X,Z,G,y,beta,hat_thetaG,study_info){
+    XZG<-cbind(X,Z,G)
+    expit_beta<-c(expit(XZG%*%beta))
+    u1<-crossprod((expit_beta-y),XZG)
     u2_beta<-expit_beta%*%X
     u2_theta<-sapply(1:ncol(X), function(id){
         u2_id<-c(expit(cbind(G,X[,id])%*%c(hat_thetaG,study_info[[id]]$Coeff)))
@@ -28,17 +28,17 @@ grad_U2_wrt_theta_func_binary_univ<-function(
 }
 
 var_U_beta_theta_func_binary_univ<-function(
-        X,A,G,y,beta,hat_thetaG,study_info
+        X,Z,G,y,beta,hat_thetaG,study_info
 ){
-    XAG<-cbind(X,A,G)
-    expit_beta<-expit(XAG%*%beta)
-    var_11<-crossprod(XAG*c(expit_beta-y))
+    XZG<-cbind(X,Z,G)
+    expit_beta<-expit(XZG%*%beta)
+    var_11<-crossprod(XZG*c(expit_beta-y))
     u2_theta<-sapply(1:ncol(X), function(id){
         expit_id<-c(expit(cbind(G,X[,id])%*%c(hat_thetaG,study_info[[id]]$Coeff)))
         expit_beta-expit_id
     }) #col is SNP #row is sample
     var_22<-crossprod(u2_theta*X)
-    var_12<-crossprod(XAG*c(expit_beta-y),u2_theta*X)
+    var_12<-crossprod(XZG*c(expit_beta-y),u2_theta*X)
     (1/nrow(X))*rbind(cbind(var_11,var_12),cbind(t(var_12),var_22))
 }
 
@@ -50,11 +50,11 @@ var_theta_hat_vec_func_binary_univ<-function(study_info){
 }
 
 cov_U_with_theta_hat_func_binary_univ<-function(
-        X,A,G,y,beta,hat_thetaG,study_info){
-    XAG<-cbind(X,A,G)
-    expit_beta<-c(expit(XAG%*%beta))
+        X,Z,G,y,beta,hat_thetaG,study_info){
+    XZG<-cbind(X,Z,G)
+    expit_beta<-c(expit(XZG%*%beta))
     expit_thetaG<-c(expit(G%*%hat_thetaG))
-    cov_U1_theta_hat<-(1/nrow(X))*crossprod(XAG*c(expit_beta-y),G*c(expit_thetaG-y))
+    cov_U1_theta_hat<-(1/nrow(X))*crossprod(XZG*c(expit_beta-y),G*c(expit_thetaG-y))
     u2_theta<-sapply(1:ncol(X), function(id){
         expit_id<-c(expit(cbind(G,X[,id])%*%c(hat_thetaG,study_info[[id]]$Coeff)))
         expit_beta-expit_id
@@ -64,20 +64,20 @@ cov_U_with_theta_hat_func_binary_univ<-function(
 }
 
 final_var_U_beta_theta_hat_func_binary_univ<-function(
-        X,A,G,y,beta,hat_thetaG,study_info){
+        X,Z,G,y,beta,hat_thetaG,study_info){
     if(is.null(X)){pX<-0}else{pX<-ncol(X)}
-    if(is.null(A)){pA<-0}else{pA<-ncol(A)}
+    if(is.null(Z)){pZ<-0}else{pZ<-ncol(Z)}
     if(is.null(G)){pG<-0}else{pG<-ncol(G)}
-    var_1st_U_beta_theta<-var_U_beta_theta_func_binary_univ(X=X,A=A,G=G,y=y,beta=beta,hat_thetaG=hat_thetaG,study_info=study_info)
+    var_1st_U_beta_theta<-var_U_beta_theta_func_binary_univ(X=X,Z=Z,G=G,y=y,beta=beta,hat_thetaG=hat_thetaG,study_info=study_info)
     var_theta_vec<-var_theta_hat_vec_func_binary_univ(study_info = study_info)
-    U_theta_gradient<-rbind(grad_U1_wrt_theta_func(pX=pX,pA=pA,pG=pG),
+    U_theta_gradient<-rbind(grad_U1_wrt_theta_func(pX=pX,pZ=pZ,pG=pG),
                             grad_U2_wrt_theta_func_binary_univ(X=X,G=G,y=y,hat_thetaG=hat_thetaG,study_info=study_info))
     var_thetaG<-var_thetaG_hat_func(G=G,y=y,hat_thetaG=hat_thetaG,study_info=study_info)
     var_grad_times_thetaG_hat<-U_theta_gradient[,1:ncol(G)]%*%var_thetaG%*%t(U_theta_gradient[,1:ncol(G)])
     var_grad_times_thetaX_hat<-U_theta_gradient[,-c(1:ncol(G))]%*%(var_theta_vec*t(U_theta_gradient[,-c(1:ncol(G))]))*nrow(X)
     var_2nd_grad_times_theta_hat<-var_grad_times_thetaG_hat+var_grad_times_thetaX_hat
     mat_outside<-inv_grad_U3_wrt_thetaG_func(G=G,y=y,hat_thetaG=hat_thetaG)
-    cov_U<-cov_U_with_theta_hat_func_binary_univ(X=X,A=A,G=G,y=y,beta=beta,hat_thetaG=hat_thetaG,study_info=study_info)
+    cov_U<-cov_U_with_theta_hat_func_binary_univ(X=X,Z=Z,G=G,y=y,beta=beta,hat_thetaG=hat_thetaG,study_info=study_info)
     cov_3rd_between_1st_2nd<-cov_U%*%mat_outside%*%t(U_theta_gradient[,1:ncol(G)])
 
     res<-(var_1st_U_beta_theta+var_2nd_grad_times_theta_hat+cov_3rd_between_1st_2nd+t(cov_3rd_between_1st_2nd))
@@ -88,24 +88,24 @@ final_var_U_beta_theta_hat_func_binary_univ<-function(
 
 # theta1 = thetaG theta2=theta
 # thetaG from G, theta from X, from summary statistics
-U_func_binary_multiv<-function(X,A,G,y,beta,hat_thetaG,study_info){
-    XAG<-cbind(X,A,G)
-    expit_beta<-c(expit(XAG%*%beta))
-    u1<-crossprod((expit_beta-y),XAG)
+U_func_binary_multiv<-function(X,Z,G,y,beta,hat_thetaG,study_info){
+    XZG<-cbind(X,Z,G)
+    expit_beta<-c(expit(XZG%*%beta))
+    u1<-crossprod((expit_beta-y),XZG)
     u2<-c(expit_beta%*%X-c(expit(cbind(G,X)%*%c(hat_thetaG,study_info[[1]]$Coeff)))%*%X)
     u<-c(u1,u2)*(1/nrow(X))
     u
 }
 dexpit<-function(x){expit(x)*(1-expit(x))}
 
-#grad_U_wrt_beta_func<-function(X,A,G,y,beta){
-#    XAG<-cbind(X,A,G)
+#grad_U_wrt_beta_func<-function(X,Z,G,y,beta){
+#    XZG<-cbind(X,Z,G)
 #dexpit_beta<-dexpit(UKBB_pop[,-1]%*%beta)
-#    dexpit_beta<-dexpit(XAG%*%beta)
+#    dexpit_beta<-dexpit(XZG%*%beta)
 #U1_beta_gradient<-crossprod(UKBB_pop[,-1]*c(dexpit_beta),UKBB_pop[,-1])*(-1)
-#    U1_beta_gradient<-crossprod(XAG*c(dexpit_beta),XAG)
+#    U1_beta_gradient<-crossprod(XZG*c(dexpit_beta),XZG)
 #U2_beta_gradient<-crossprod(UKBB_pop[,var_SNP]*c(dexpit_beta),UKBB_pop[,-1])
-#    U2_beta_gradient<-crossprod(X*c(dexpit_beta),XAG)
+#    U2_beta_gradient<-crossprod(X*c(dexpit_beta),XZG)
 #rbind(U1_beta_gradient,U2_beta_gradient)*(1/N_Pop)
 #    rbind(U1_beta_gradient,U2_beta_gradient)*(1/nrow(X))}
 
@@ -121,7 +121,7 @@ inv_grad_U3_wrt_thetaG_func<-function(G,y,hat_thetaG){
     -ginv(mat)
 }
 
-grad_U1_wrt_theta_func<-function(pX,pA,pG){matrix(0,nrow=pX+pA+pG,ncol=pX+pG)}
+grad_U1_wrt_theta_func<-function(pX,pZ,pG){matrix(0,nrow=pX+pZ+pG,ncol=pX+pG)}
 
 grad_U2_wrt_theta_func_binary_multiv<-function(
         X,G,y,hat_thetaG,study_info){
@@ -131,13 +131,13 @@ grad_U2_wrt_theta_func_binary_multiv<-function(
 }
 
 var_U_beta_theta_func_binary_multiv<-function(
-        X,A,G,y,beta,hat_thetaG,study_info){
-    XAG<-cbind(X,A,G)
-    expit_beta<-c(expit(XAG%*%beta))
-    var_11<-crossprod(XAG*c(expit_beta-y))
+        X,Z,G,y,beta,hat_thetaG,study_info){
+    XZG<-cbind(X,Z,G)
+    expit_beta<-c(expit(XZG%*%beta))
+    var_11<-crossprod(XZG*c(expit_beta-y))
     u2_theta<-expit_beta-c(expit(cbind(X,G)%*%c(study_info[[1]]$Coeff,hat_thetaG)))
     var_22<-crossprod(u2_theta*X)
-    var_12<-crossprod(XAG*c(expit_beta-y),u2_theta*X)
+    var_12<-crossprod(XZG*c(expit_beta-y),u2_theta*X)
     (1/nrow(X))*rbind(cbind(var_11,var_12),cbind(t(var_12),var_22))
 }
 
@@ -153,24 +153,24 @@ var_theta_hat_vec_func_binary_multiv<-function(study_info){
 }
 
 cov_U_with_theta_hat_func_binary_multiv<-function(
-        X,A,G,y,beta,hat_thetaG,study_info){
-    XAG<-cbind(X,A,G)
-    expit_beta<-c(expit(XAG%*%beta))
+        X,Z,G,y,beta,hat_thetaG,study_info){
+    XZG<-cbind(X,Z,G)
+    expit_beta<-c(expit(XZG%*%beta))
     expit_thetaG<-c(expit(G%*%hat_thetaG))
-    cov_U1_theta_hat<-(1/nrow(X))*crossprod(XAG*c(expit_beta-y),G*c(expit_thetaG-y))
+    cov_U1_theta_hat<-(1/nrow(X))*crossprod(XZG*c(expit_beta-y),G*c(expit_thetaG-y))
     u2_theta<-expit_beta-c(expit(cbind(X,G)%*%c(study_info[[1]]$Coeff,hat_thetaG)))
     cov_U2_theta_hat<-(1/nrow(X))*crossprod(u2_theta*X,G*c(expit_thetaG-y))
     rbind(cov_U1_theta_hat,cov_U2_theta_hat)
 }
 
 final_var_U_beta_theta_hat_func_binary_multiv<-function(
-        X,A,G,y,beta,hat_thetaG,study_info){
+        X,Z,G,y,beta,hat_thetaG,study_info){
     if(is.null(X)){pX<-0}else{pX<-ncol(X)}
-    if(is.null(A)){pA<-0}else{pA<-ncol(A)}
+    if(is.null(Z)){pZ<-0}else{pZ<-ncol(Z)}
     if(is.null(G)){pG<-0}else{pG<-ncol(G)}
-    var_1st_U_beta_theta<-var_U_beta_theta_func_binary_multiv(X=X,A=A,G=G,y=y,beta=beta,hat_thetaG=hat_thetaG,study_info=study_info)
+    var_1st_U_beta_theta<-var_U_beta_theta_func_binary_multiv(X=X,Z=Z,G=G,y=y,beta=beta,hat_thetaG=hat_thetaG,study_info=study_info)
     var_theta_mat<-var_theta_hat_vec_func_binary_multiv(study_info = study_info)
-    U_theta_gradient<-rbind(grad_U1_wrt_theta_func(pX=pX,pA=pA,pG=pG),
+    U_theta_gradient<-rbind(grad_U1_wrt_theta_func(pX=pX,pZ=pZ,pG=pG),
                             grad_U2_wrt_theta_func_binary_multiv(X=X,G=G,y=y,hat_thetaG=hat_thetaG,study_info=study_info))
     var_thetaG<-var_thetaG_hat_func(G=G,y=y,hat_thetaG=hat_thetaG,study_info=study_info)
 
@@ -178,7 +178,7 @@ final_var_U_beta_theta_hat_func_binary_multiv<-function(
     var_grad_times_thetaX_hat<-U_theta_gradient[,-c(1:ncol(G))]%*%var_theta_mat%*%t(U_theta_gradient[,-c(1:ncol(G))])*nrow(X)
     var_2nd_grad_times_theta_hat<-var_grad_times_thetaG_hat+var_grad_times_thetaX_hat
     mat_outside<-inv_grad_U3_wrt_thetaG_func(G=G,y=y,hat_thetaG=hat_thetaG)
-    cov_U<-cov_U_with_theta_hat_func_binary_multiv(X=X,A=A,G=G,y=y,beta=beta,hat_thetaG=hat_thetaG,study_info=study_info)
+    cov_U<-cov_U_with_theta_hat_func_binary_multiv(X=X,Z=Z,G=G,y=y,beta=beta,hat_thetaG=hat_thetaG,study_info=study_info)
     cov_3rd_between_1st_2nd<-cov_U%*%mat_outside%*%t(U_theta_gradient[,1:ncol(G)])
     res<-(var_1st_U_beta_theta+var_2nd_grad_times_theta_hat+cov_3rd_between_1st_2nd+t(cov_3rd_between_1st_2nd))
     res
@@ -186,24 +186,24 @@ final_var_U_beta_theta_hat_func_binary_multiv<-function(
 
 ############## Beta
 pseudo_Xy_binary_multiv<-function(C_half,
-        X,A,G,y,beta,hat_thetaG,study_info){
-    XAG<-cbind(X,A,G)
-    expit_beta<-c(expit(XAG%*%beta))
+                                  X,Z,G,y,beta,hat_thetaG,study_info){
+    XZG<-cbind(X,Z,G)
+    expit_beta<-c(expit(XZG%*%beta))
     dexpit_beta<-expit_beta*(1-expit_beta)
-    pseudo_X<-C_half%*%rbind(t(XAG),t(X))%*%(XAG*c(dexpit_beta))
-    u<-c(C_half%*%U_func_binary_multiv(X=X,A=A,G=G,y=y,beta=beta,hat_thetaG=hat_thetaG,study_info=study_info))
+    pseudo_X<-C_half%*%rbind(t(XZG),t(X))%*%(XZG*c(dexpit_beta))
+    u<-c(C_half%*%U_func_binary_multiv(X=X,Z=Z,G=G,y=y,beta=beta,hat_thetaG=hat_thetaG,study_info=study_info))
     pseudo_y<- -u*nrow(X) + c(pseudo_X%*%beta)
     newList<-list("pseudo_X"=pseudo_X,"pseudo_y"=pseudo_y)
     newList
 }
 
 pseudo_Xy_binary_univ<-function(C_half,
-        X,A,G,y,beta,hat_thetaG,study_info){
-    XAG<-cbind(X,A,G)
-    expit_beta<-c(expit(XAG%*%beta))
+                                X,Z,G,y,beta,hat_thetaG,study_info){
+    XZG<-cbind(X,Z,G)
+    expit_beta<-c(expit(XZG%*%beta))
     dexpit_beta<-expit_beta*(1-expit_beta)
-    pseudo_X<-C_half%*%rbind(t(XAG),t(X))%*%(XAG*c(dexpit_beta))
-    u<-c(C_half%*%U_func_binary_univ(X=X,A=A,G=G,y=y,beta=beta,hat_thetaG=hat_thetaG,study_info=study_info))
+    pseudo_X<-C_half%*%rbind(t(XZG),t(X))%*%(XZG*c(dexpit_beta))
+    u<-c(C_half%*%U_func_binary_univ(X=X,Z=Z,G=G,y=y,beta=beta,hat_thetaG=hat_thetaG,study_info=study_info))
     pseudo_y<- -u*nrow(X) + c(pseudo_X%*%beta)
     newList<-list("pseudo_X"=pseudo_X,"pseudo_y"=pseudo_y)
     newList
@@ -211,22 +211,22 @@ pseudo_Xy_binary_univ<-function(C_half,
 
 ## cross validation helper function 1
 
-cv_dev_lambda_ratio_func<-function(index_fold,X,A,G,y,
+cv_dev_lambda_ratio_func<-function(index_fold,X,Z,G,y,
                                    C_half,beta_initial,hat_thetaG,
                                    study_info,lambda_list,
-                                   ratio_range,pX,pA,pG,
+                                   ratio_range,pX,pZ,pG,
                                    w_adaptive,final_alpha,
                                    pseudo_Xy){
     dev_lam_ratio<-lapply(1:length(index_fold), function(cur_fold){
         index_test<-index_fold[[cur_fold]]
         Xtrain<-X[-index_test,]
         Xtest<-X[index_test,]
-        if(!is.null(A)){
-            Atrain<-A[-index_test,]
-            Atest<-A[index_test,]
+        if(!is.null(Z)){
+            Ztrain<-Z[-index_test,]
+            Ztest<-Z[index_test,]
         }else{
-            Atrain<-NULL
-            Atest<-NULL}
+            Ztrain<-NULL
+            Ztest<-NULL}
         if(!is.null(G)){
             Gtrain<-G[-index_test,]
             Gtest<-G[index_test,]
@@ -235,7 +235,7 @@ cv_dev_lambda_ratio_func<-function(index_fold,X,A,G,y,
             Gtest<-NULL}
         ytrain<-y[-index_test]
         ytest<-y[index_test]
-        pseudo_Xy_list_train<-pseudo_Xy(C_half,Xtrain,Atrain,Gtrain,
+        pseudo_Xy_list_train<-pseudo_Xy(C_half,Xtrain,Ztrain,Gtrain,
                                         ytrain,beta = beta_initial,hat_thetaG = hat_thetaG,
                                         study_info=study_info)
         initial_sf_train<-nrow(Xtrain)/sqrt(nrow(pseudo_Xy_list_train$pseudo_X))
@@ -243,16 +243,16 @@ cv_dev_lambda_ratio_func<-function(index_fold,X,A,G,y,
         pseudo_y_train<-pseudo_Xy_list_train$pseudo_y/initial_sf_train
         dev_lam_ratio_fold<-sapply(lambda_list,function(cur_lam){
             sapply(ratio_range,function(cur_ratio){
-                ratio_vec<-c(rep(cur_ratio,pX),rep(1,pA+pG))
+                ratio_vec<-c(rep(cur_ratio,pX),rep(1,pZ+pG))
                 w_adaptive_ratio<-w_adaptive*ratio_vec
                 cv_fit<-glmnet(x=pseudo_X_train,y=pseudo_y_train,
                                standardize=F,intercept=F,alpha = final_alpha,
                                penalty.factor = w_adaptive_ratio,
                                lambda = cur_lam)
                 cur_beta<-coef.glmnet(cv_fit)[-1]
-                probtest <- c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta))
+                probtest <- c(expit(cbind(Xtest,Ztest,Gtest)%*%cur_beta))
                 cur_dev <- -2*sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
-                #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta)),direction = "<")))
+                #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Ztest,Gtest)%*%cur_beta)),direction = "<")))
                 cur_dev
             })
         }) # row is ratio_range & col is lambda_list
@@ -265,7 +265,7 @@ cv_dev_lambda_ratio_func<-function(index_fold,X,A,G,y,
 
 ## cross validation helper function 2
 
-cv_dev_lambda_func<-function(index_fold,X,A,G,y,
+cv_dev_lambda_func<-function(index_fold,X,Z,G,y,
                              C_half,beta_initial,hat_thetaG,
                              study_info,lambda_list,
                              w_adaptive,final_alpha,
@@ -274,12 +274,12 @@ cv_dev_lambda_func<-function(index_fold,X,A,G,y,
         index_test<-index_fold[[cur_fold]]
         Xtrain<-X[-index_test,]
         Xtest<-X[index_test,]
-        if(!is.null(A)){
-            Atrain<-A[-index_test,]
-            Atest<-A[index_test,]
+        if(!is.null(Z)){
+            Ztrain<-Z[-index_test,]
+            Ztest<-Z[index_test,]
         }else{
-            Atrain<-NULL
-            Atest<-NULL}
+            Ztrain<-NULL
+            Ztest<-NULL}
         if(!is.null(G)){
             Gtrain<-G[-index_test,]
             Gtest<-G[index_test,]
@@ -288,7 +288,7 @@ cv_dev_lambda_func<-function(index_fold,X,A,G,y,
             Gtest<-NULL}
         ytrain<-y[-index_test]
         ytest<-y[index_test]
-        pseudo_Xy_list_train<-pseudo_Xy(C_half,Xtrain,Atrain,Gtrain,
+        pseudo_Xy_list_train<-pseudo_Xy(C_half,Xtrain,Ztrain,Gtrain,
                                         ytrain,beta = beta_initial,hat_thetaG = hat_thetaG,
                                         study_info=study_info)
         initial_sf_train<-nrow(Xtrain)/sqrt(nrow(pseudo_Xy_list_train$pseudo_X))
@@ -299,10 +299,10 @@ cv_dev_lambda_func<-function(index_fold,X,A,G,y,
                            standardize=F,intercept=F,
                            alpha = final_alpha,penalty.factor = w_adaptive,lambda = cur_lam)
             cur_beta<-coef.glmnet(cv_fit)[-1]
-            probtest <- c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta))
+            probtest <- c(expit(cbind(Xtest,Ztest,Gtest)%*%cur_beta))
             cur_dev <- -2*sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
-            #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta)),direction = "<")))
-            #sum((cbind(Xtest,Atest,Gtest)%*%cur_beta - ytest)^2)
+            #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Ztest,Gtest)%*%cur_beta)),direction = "<")))
+            #sum((cbind(Xtest,Ztest,Gtest)%*%cur_beta - ytest)^2)
             cur_dev
         })
         dev_lam
@@ -312,21 +312,21 @@ cv_dev_lambda_func<-function(index_fold,X,A,G,y,
 
 ## cross validation helper function 3
 
-holdout_dev_lambda_ratio_func<-function(lambda_list,ratio_range,pX,pA,pG,
+holdout_dev_lambda_ratio_func<-function(lambda_list,ratio_range,pX,pZ,pG,
                                         w_adaptive,pseudo_X_train,pseudo_y_train,
-                                        final_alpha,Xtest,Atest,Gtest,ytest){
+                                        final_alpha,Xtest,Ztest,Gtest,ytest){
     dev_lam_ratio<-sapply(lambda_list,function(cur_lam){
         sapply(ratio_range,function(cur_ratio){
-            ratio_vec<-c(rep(cur_ratio,pX),rep(1,pA+pG))
+            ratio_vec<-c(rep(cur_ratio,pX),rep(1,pZ+pG))
             w_adaptive_ratio<-w_adaptive*ratio_vec
             cv_fit<-glmnet(x=pseudo_X_train,y=pseudo_y_train,
                            standardize=F,intercept=F,alpha = final_alpha,
                            penalty.factor = w_adaptive_ratio,
                            lambda = cur_lam)
             cur_beta<-coef.glmnet(cv_fit)[-1]
-            probtest <- c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta))
+            probtest <- c(expit(cbind(Xtest,Ztest,Gtest)%*%cur_beta))
             cur_dev <- -2*sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
-            #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta)),direction = "<")))
+            #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Ztest,Gtest)%*%cur_beta)),direction = "<")))
             cur_dev
         })
     }) # row is ratio_range & col is lambda_list
@@ -337,30 +337,30 @@ holdout_dev_lambda_ratio_func<-function(lambda_list,ratio_range,pX,pA,pG,
 ## cross validation helper function 4
 
 holdout_dev_lambda_func<-function(lambda_list,pseudo_X_train,pseudo_y_train,
-                                  final_alpha,w_adaptive,Xtest,Atest,Gtest,ytest){
+                                  final_alpha,w_adaptive,Xtest,Ztest,Gtest,ytest){
     dev_lam<-sapply(lambda_list,function(cur_lam){
         cv_fit<-glmnet(x= (pseudo_X_train),y= (pseudo_y_train),
                        standardize=F,intercept=F,
                        alpha = final_alpha,penalty.factor = w_adaptive,
                        lambda = cur_lam)
         cur_beta<-coef.glmnet(cv_fit)[-1]
-        probtest <- c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta))
+        probtest <- c(expit(cbind(Xtest,Ztest,Gtest)%*%cur_beta))
         cur_dev <- -2*sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
-        #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Atest,Gtest)%*%cur_beta)),direction = "<")))
+        #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Xtest,Ztest,Gtest)%*%cur_beta)),direction = "<")))
         cur_dev
     })
     dev_lam
 }
 
 tlgmm.binary<-function(
-        y,X,A=NULL,G=1,
+        y,X,Z=NULL,G=1,
         study_info=NULL,
         summary_type = "multi",
         penalty_type = "lasso",
         initial_with_type = "ridge",
         beta_initial = NULL,
         remove_penalty_X = FALSE,
-        remove_penalty_A = FALSE,
+        remove_penalty_Z = FALSE,
         tune_ratio = TRUE,
         fix_lambda = NULL,
         lambda_list = NULL,
@@ -393,7 +393,7 @@ tlgmm.binary<-function(
     if(!is.null(fix_ratio)){
         if(tune_ratio){
             stop("If ratio is fixed, please set tune_ratio as FALSE")
-        }else if(remove_penalty_X | remove_penalty_A){
+        }else if(remove_penalty_X | remove_penalty_Z){
             stop("If ratio is fixed, please set remove_penalty's as FALSE")
         }
     }
@@ -402,9 +402,9 @@ tlgmm.binary<-function(
     if(G==1){G<-matrix(1,nrow=nX,ncol=1)}
     nXext<-study_info[[1]]$Sample_size
     pX<-ncol(X)
-    if(is.null(A)){pA<-0}else{pA<-ncol(A)}
+    if(is.null(Z)){pZ<-0}else{pZ<-ncol(Z)}
     if(is.null(G)){pG<-0}else{pG<-ncol(G)}
-    if(nX<2*pX+pA+pG){use_sparseC<-TRUE}
+    if(nX<2*pX+pZ+pG){use_sparseC<-TRUE}
     if (summary_type == "uni"){
         pseudo_Xy <- pseudo_Xy_binary_univ
         inv_C_func <- final_var_U_beta_theta_hat_func_binary_univ
@@ -418,30 +418,30 @@ tlgmm.binary<-function(
         hat_thetaG_glm<-glm(y~0+.,data = data.frame(y,G,X),family = "binomial")
         hat_thetaG<-hat_thetaG_glm$coefficients[1:pG]
     }
-    XAG<-cbind(X,A,G)
+    XZG<-cbind(X,Z,G)
     Xid<-1:pX
-    Aid<-(pX+1):(pX+pA)
-    Gid<-(pX+pA+1):(pX+pA+pG)
-    fix_penalty<-c(rep(1,pX+pA),rep(0,pG))
+    Zid<-(pX+1):(pX+pZ)
+    Gid<-(pX+pZ+1):(pX+pZ+pG)
+    fix_penalty<-c(rep(1,pX+pZ),rep(0,pG))
     if(remove_penalty_X){fix_penalty[Xid]<-0}
-    if(remove_penalty_A){fix_penalty[Aid]<-0}
+    if(remove_penalty_Z){fix_penalty[Zid]<-0}
     if(!is.null(fix_ratio)){fix_penalty[Xid]<-fix_ratio}
     if(!is.null(beta_initial)){
-        if(length(beta_initial)!=pX+pA+pG){
-            warning("beta_initial should be from X,A,G.\n Length not match, compute default initial instead.")
+        if(length(beta_initial)!=pX+pZ+pG){
+            warning("beta_initial should be from X,Z,G.\n Length not match, compute default initial instead.")
             beta_initial<-NULL
         }
     }
     if(is.null(beta_initial) & initial_with_type %in% c("ridge","lasso")){
         if(initial_with_type == "ridge"){initial_alpha=0}else{initial_alpha=1}
         if(pG == 1 & unique(G) == 1){
-            fit_initial<-cv.glmnet(x=cbind(X,A),y=y,alpha = initial_alpha,penalty.factor = fix_penalty[c(Xid,Aid)],family="binomial")
+            fit_initial<-cv.glmnet(x=cbind(X,Z),y=y,alpha = initial_alpha,penalty.factor = fix_penalty[c(Xid,Zid)],family="binomial")
             beta_initial<-c(coef.glmnet(fit_initial,s="lambda.min")[-1])
             beta_initial<-c(beta_initial,coef.glmnet(fit_initial,s="lambda.min")[1])
         }else if(pG > 1 & unique(G[,1])==1){
-            fit_initial<-cv.glmnet(x=cbind(X,A,G[,-1]),y=y,alpha = initial_alpha,penalty.factor = fix_penalty[c(Xid,Aid,Gid[-1])],family="binomial")
+            fit_initial<-cv.glmnet(x=cbind(X,Z,G[,-1]),y=y,alpha = initial_alpha,penalty.factor = fix_penalty[c(Xid,Zid,Gid[-1])],family="binomial")
             beta_initial<-c(coef.glmnet(fit_initial,s="lambda.min")[-1])
-            beta_initial<-c(beta_initial[c(Xid,Aid)],coef.glmnet(fit_initial,s="lambda.min")[1],beta_initial[c(Gid[-1])])
+            beta_initial<-c(beta_initial[c(Xid,Zid)],coef.glmnet(fit_initial,s="lambda.min")[1],beta_initial[c(Gid[-1])])
         }else{
             stop("The first column of G should be 1 for intercept.")
         }
@@ -452,7 +452,7 @@ tlgmm.binary<-function(
         w_adaptive<-w_adaptive*fix_penalty
     }else{w_adaptive<-fix_penalty}
     # Estimation of C
-    inv_C = inv_C_func(X=X,A=A,G=G,y=y,
+    inv_C = inv_C_func(X=X,Z=Z,G=G,y=y,
                        beta=beta_initial,hat_thetaG=hat_thetaG,
                        study_info=study_info)
     if(use_sparseC){
@@ -463,7 +463,7 @@ tlgmm.binary<-function(
     }
 
     # Prepare for final model
-    pseudo_Xy_list<-pseudo_Xy(C_half,X,A,G,y,beta = beta_initial,hat_thetaG = hat_thetaG,study_info=study_info)
+    pseudo_Xy_list<-pseudo_Xy(C_half,X,Z,G,y,beta = beta_initial,hat_thetaG = hat_thetaG,study_info=study_info)
     initial_sf<-nX/sqrt(nrow(pseudo_Xy_list$pseudo_X))
     pseudo_X<-pseudo_Xy_list$pseudo_X/initial_sf
     pseudo_y<-pseudo_Xy_list$pseudo_y/initial_sf
@@ -477,7 +477,7 @@ tlgmm.binary<-function(
         if(fix_lambda<0){stop("The fixed lambda should be nonnegative.")}
     }
 
-    if(tune_ratio & !remove_penalty_X & !remove_penalty_A){
+    if(tune_ratio & !remove_penalty_X & !remove_penalty_Z){
         if(is.null(ratio_range)){
             if(is.null(ratio_lower)){ratio_lower<-sqrt(nX/(nX+nXext))/2}
             if(is.null(ratio_upper)){ratio_upper<-(nX)^(1/3)/2}
@@ -496,15 +496,15 @@ tlgmm.binary<-function(
                           "fix_lambda"=fix_lambda,
                           "fix_ratio"=fix_ratio)
     }else if(validation_type == 'holdout'){
-        index_valid<-createDataPartition(y,p = holdout_p)$Resample1
+        index_valid<-createDatapartition(y,p = holdout_p)$Resample1
         Xtrain<-X[-index_valid,]
         Xtest<-X[index_valid,]
-        if(!is.null(A)){
-            Atrain<-A[-index_valid,]
-            Atest<-A[index_valid,]
+        if(!is.null(Z)){
+            Ztrain<-Z[-index_valid,]
+            Ztest<-Z[index_valid,]
         }else{
-            Atrain<-NULL
-            Atest<-NULL}
+            Ztrain<-NULL
+            Ztest<-NULL}
         if(!is.null(G)){
             Gtrain<-G[-index_valid,]
             Gtest<-G[index_valid,]
@@ -514,7 +514,7 @@ tlgmm.binary<-function(
         ytrain<-y[-index_valid]
         ytest<-y[index_valid]
 
-        pseudo_Xy_list_train<-pseudo_Xy(C_half,Xtrain,Atrain,Gtrain,
+        pseudo_Xy_list_train<-pseudo_Xy(C_half,Xtrain,Ztrain,Gtrain,
                                         ytrain,beta = beta_initial,hat_thetaG = hat_thetaG,
                                         study_info=study_info)
         initial_sf_train<-nrow(Xtrain)/sqrt(nrow(pseudo_Xy_list_train$pseudo_X))
@@ -523,19 +523,19 @@ tlgmm.binary<-function(
 
 
         if(tune_ratio){
-            holdout_dev<-holdout_dev_lambda_ratio_func(lambda_list,ratio_range,pX,pA,pG,
-                                   w_adaptive,pseudo_X_train,pseudo_y_train,
-                                   final_alpha,Xtest,Atest,Gtest,ytest)
+            holdout_dev<-holdout_dev_lambda_ratio_func(lambda_list,ratio_range,pX,pZ,pG,
+                                                       w_adaptive,pseudo_X_train,pseudo_y_train,
+                                                       final_alpha,Xtest,Ztest,Gtest,ytest)
             ids<-which(holdout_dev==min(holdout_dev),arr.ind = TRUE)
             final.ratio.min<-ratio_range[ids[1]]
             final.lambda.min<-lambda_list[ids[2]]
         }else{
             holdout_dev<-holdout_dev_lambda_func(lambda_list,pseudo_X_train,pseudo_y_train,
-                                 final_alpha,w_adaptive,Xtest,Atest,Gtest,ytest)
+                                                 final_alpha,w_adaptive,Xtest,Ztest,Gtest,ytest)
             final.lambda.min<-lambda_list[which.min(holdout_dev)]
             final.ratio.min<-1
         }
-        ratio_vec<-c(rep(final.ratio.min,pX),rep(1,pA+pG))
+        ratio_vec<-c(rep(final.ratio.min,pX),rep(1,pZ+pG))
         w_adaptive_ratio<-w_adaptive*ratio_vec
         fit_final_lam_ratio<-glmnet(x= pseudo_X_train,y= pseudo_y_train,standardize=F,
                                     intercept=F,alpha = final_alpha,
@@ -553,23 +553,23 @@ tlgmm.binary<-function(
         index_fold<-createFolds(y,k = nfolds)
 
         if(tune_ratio){
-            cv_dev<-cv_dev_lambda_ratio_func(index_fold,X,A,G,y,
+            cv_dev<-cv_dev_lambda_ratio_func(index_fold,X,Z,G,y,
                                              C_half,beta_initial,hat_thetaG,
                                              study_info,lambda_list,
-                                             ratio_range,pX,pA,pG,
+                                             ratio_range,pX,pZ,pG,
                                              w_adaptive,final_alpha,pseudo_Xy)
             ids<-which(cv_dev==min(cv_dev),arr.ind = TRUE)
             final.ratio.min<-ratio_range[ids[1]]
             final.lambda.min<-lambda_list[ids[2]]
         }else{
-            cv_dev<-cv_dev_lambda_func(index_fold,X,A,G,y,
+            cv_dev<-cv_dev_lambda_func(index_fold,X,Z,G,y,
                                        C_half,beta_initial,hat_thetaG,
                                        study_info,lambda_list,
                                        w_adaptive,final_alpha,pseudo_Xy)
             final.lambda.min<-lambda_list[which.min(cv_dev)]
             final.ratio.min<-1
         }
-        ratio_vec<-c(rep(final.ratio.min,pX),rep(1,pA+pG))
+        ratio_vec<-c(rep(final.ratio.min,pX),rep(1,pZ+pG))
         w_adaptive_ratio<-w_adaptive*ratio_vec
         fit_final_lam_ratio<-glmnet(x= pseudo_X,y= pseudo_y,standardize=F,
                                     intercept=F,alpha = final_alpha,
@@ -589,16 +589,16 @@ tlgmm.binary<-function(
     if(inference & length(index_nonzero) > 1){
         # refine C
 
-        inv_C = inv_C_func(X=X,A=A,G=G,y=y,
+        inv_C = inv_C_func(X=X,Z=Z,G=G,y=y,
                            beta=beta,hat_thetaG=hat_thetaG,
                            study_info=study_info)
         inv_C_svd<-fast.svd(inv_C+diag(1e-15,nrow(inv_C)))
         C_half<-inv_C_svd$v%*%diag(1/sqrt(inv_C_svd$d))%*%t(inv_C_svd$u)
-        XAG<-cbind(X,A,G)
-        expit_beta<-c(expit(XAG%*%beta))
+        XZG<-cbind(X,Z,G)
+        expit_beta<-c(expit(XZG%*%beta))
         dexpit_beta<-expit_beta*(1-expit_beta)
-        pseudo_X<-C_half%*%rbind(t(XAG),t(X))%*%(XAG*c(dexpit_beta))/nX
-        #Sigsum_half<-cbind(xagtxag/nX,crossprod(XAG,X)/nX)%*%C_half
+        pseudo_X<-C_half%*%rbind(t(XZG),t(X))%*%(XZG*c(dexpit_beta))/nX
+        #Sigsum_half<-cbind(XZGtXZG/nX,crossprod(XZG,X)/nX)%*%C_half
         #Sigsum_scaled<-Sigsum_half%*%t(Sigsum_half)
         Sigsum_scaled<-crossprod(pseudo_X)
         Sigsum_scaled_nonzero<-Sigsum_scaled[index_nonzero,index_nonzero]
