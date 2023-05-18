@@ -295,7 +295,6 @@ cv.tlgmm<-function(
         use_sparseC = FALSE,
         seed.use = 97
 ){
-    print("Update Proof")
     if(!family %in% c("gaussian","binomial")){
         stop("Select family from c('gaussian','binomial')")
     }
