@@ -1,93 +1,93 @@
 #pacman::p_load(expm,magic,glmnet,cluster,MASS,locfit,corpcor,caret,mvtnorm)
 pseudo_Xy_multiv_addition<-function(
-        C_half,Z,W,y,study_info){
-    ZW<-cbind(Z,W)
-    ZWtZW<-crossprod(ZW)
-    ZtZW<-crossprod(Z,ZW)
-    pseudo_X<-C_half%*%rbind(ZWtZW,ZtZW)
-    pseudo_y1<-crossprod(y,ZW)
-    pseudo_y2<-crossprod(Z)%*%study_info[[1]]$Coeff
+        C_half,X,Z,y,study_info){
+    XZ<-cbind(X,Z)
+    XZtXZ<-crossprod(XZ)
+    XtXZ<-crossprod(X,XZ)
+    pseudo_X<-C_half%*%rbind(XZtXZ,XtXZ)
+    pseudo_y1<-crossprod(y,XZ)
+    pseudo_y2<-crossprod(X)%*%study_info[[1]]$Coeff
     pseudo_y<-c(c(pseudo_y1,pseudo_y2)%*%C_half)
     list("pseudo_X"=pseudo_X,"pseudo_y"=pseudo_y)
 }
 # work for computation of weighting matrix C
 var_U_beta_theta_func_multiv_addition<-function(
-        Z,W,y,beta,
+        X,Z,y,beta,
         study_info){
-    ZW<-cbind(Z,W)
-    ZWtbeta<-(ZW%*%beta)
-    Zttheta<-(Z%*%study_info[[1]]$Coeff)
-    var_11<-crossprod(ZW*c(ZWtbeta-y))
-    var_22<-crossprod(Z*c(ZWtbeta-Zttheta))
-    var_12<-crossprod(ZW*c(ZWtbeta-y),Z*c(ZWtbeta-Zttheta))
-    (1/nrow(Z))*rbind(cbind(var_11,var_12),cbind(t(var_12),var_22))
+    XZ<-cbind(X,Z)
+    XZtbeta<-(XZ%*%beta)
+    xttheta<-(X%*%study_info[[1]]$Coeff)
+    var_11<-crossprod(XZ*c(XZtbeta-y))
+    var_22<-crossprod(X*c(XZtbeta-xttheta))
+    var_12<-crossprod(XZ*c(XZtbeta-y),X*c(XZtbeta-xttheta))
+    (1/nrow(X))*rbind(cbind(var_11,var_12),cbind(t(var_12),var_22))
 }
 
 pseudo_Xy_univ_addition<-function(
-        C_half,Z,W,y,study_info){
-    ZW<-cbind(Z,W)
-    ZWtZW<-crossprod(ZW)
-    ZtZW<-crossprod(Z,ZW)
-    pseudo_X<-C_half%*%rbind(ZWtZW,ZtZW)
-    pseudo_y1<-crossprod(y,ZW)
-    pseudo_y2<-sapply(1:ncol(Z), function(id){
-        u2_id<-c(Z[,id]*study_info[[id]]$Coeff)
-        c(u2_id%*%Z[,id])
+        C_half,X,Z,y,study_info){
+    XZ<-cbind(X,Z)
+    XZtXZ<-crossprod(XZ)
+    XtXZ<-crossprod(X,XZ)
+    pseudo_X<-C_half%*%rbind(XZtXZ,XtXZ)
+    pseudo_y1<-crossprod(y,XZ)
+    pseudo_y2<-sapply(1:ncol(X), function(id){
+        u2_id<-c(X[,id]*study_info[[id]]$Coeff)
+        c(u2_id%*%X[,id])
     })
     pseudo_y<-c(c(pseudo_y1,pseudo_y2)%*%C_half)
     list("pseudo_X"=pseudo_X,"pseudo_y"=pseudo_y)
 }
 # work for computation of weighting matrix C
 var_U_beta_theta_func_univ_addition<-function(
-        Z,W,y,beta,
+        X,Z,y,beta,
         study_info){
-    ZW<-cbind(Z,W)
-    ZWtbeta<-(ZW%*%beta)
-    var_11<-crossprod(ZW*c(ZWtbeta-y))
-    u2_theta_coef<-sapply(1:ncol(Z), function(id){
-        Ztgamma_id<-c(Z[,id]*study_info[[id]]$Coeff)
-        ZWtbeta-Ztgamma_id
+    XZ<-cbind(X,Z)
+    XZtbeta<-(XZ%*%beta)
+    var_11<-crossprod(XZ*c(XZtbeta-y))
+    u2_theta_coef<-sapply(1:ncol(X), function(id){
+        xtgamma_id<-c(X[,id]*study_info[[id]]$Coeff)
+        XZtbeta-xtgamma_id
     }) #row is sample #col is SNP
-    var_22<-crossprod(u2_theta_coef*Z)
-    var_12<-crossprod(ZW*c(ZWtbeta-y),u2_theta_coef*Z)
-    (1/nrow(Z))*rbind(cbind(var_11,var_12),cbind(t(var_12),var_22))
+    var_22<-crossprod(u2_theta_coef*X)
+    var_12<-crossprod(XZ*c(XZtbeta-y),u2_theta_coef*X)
+    (1/nrow(X))*rbind(cbind(var_11,var_12),cbind(t(var_12),var_22))
 }
 
 
 
 
 ## inside helper function
-cv_mse_lambda_ratio_func<-function(index_fold,Z,W,y,C_half,
+cv_mse_lambda_ratio_func<-function(index_fold,X,Z,y,C_half,
                                    study_info,lambda_list,
-                                   ratio_range,pZ,pW,w_adaptive,
+                                   ratio_range,pX,pZ,w_adaptive,
                                    final_alpha,pseudo_Xy){
     fold_mse_lambda_ratio<-lapply(1:length(index_fold), function(cur_fold){
         index_test<-index_fold[[cur_fold]]
-        Ztrain<-Z[-index_test,]
-        Ztest<-Z[index_test,]
-        if(!is.null(W)){
-            Wtrain<-W[-index_test,]
-            Wtest<-W[index_test,]
+        Xtrain<-X[-index_test,]
+        Xtest<-X[index_test,]
+        if(!is.null(Z)){
+            Ztrain<-Z[-index_test,]
+            Ztest<-Z[index_test,]
         }else{
-            Wtrain<-NULL
-            Wtest<-NULL}
+            Ztrain<-NULL
+            Ztest<-NULL}
         ytrain<-y[-index_test]
         ytest<-y[index_test]
-        pseudo_Xy_list_train<-pseudo_Xy(C_half,Ztrain,Wtrain,
+        pseudo_Xy_list_train<-pseudo_Xy(C_half,Xtrain,Ztrain,
                                         ytrain,study_info)
-        initial_sf_train<-nrow(Ztrain)/sqrt(nrow(pseudo_Xy_list_train$pseudo_X))
+        initial_sf_train<-nrow(Xtrain)/sqrt(nrow(pseudo_Xy_list_train$pseudo_X))
         pseudo_X_train<-pseudo_Xy_list_train$pseudo_X/initial_sf_train
         pseudo_y_train<-pseudo_Xy_list_train$pseudo_y/initial_sf_train
         mse_lam_ratio_fold<-sapply(lambda_list,function(cur_lam){
             sapply(ratio_range,function(cur_ratio){
-                ratio_vec<-c(rep(cur_ratio,pZ),rep(1,pW))
+                ratio_vec<-c(rep(cur_ratio,pX),rep(1,pZ))
                 w_adaptive_ratio<-w_adaptive*ratio_vec
                 cv_fit<-glmnet(x=pseudo_X_train,y=pseudo_y_train,
                                standardize=F,intercept=F,alpha = final_alpha,
                                penalty.factor = w_adaptive_ratio,
                                lambda = cur_lam)
                 cur_beta<-coef.glmnet(cv_fit)[-1]
-                mean((cbind(Ztest,Wtest)%*%cur_beta - ytest)^2)
+                mean((cbind(Xtest,Ztest)%*%cur_beta - ytest)^2)
             })
         }) # row is ratio_range & col is lambda_list
         mse_lam_ratio_fold
@@ -97,25 +97,25 @@ cv_mse_lambda_ratio_func<-function(index_fold,Z,W,y,C_half,
 }
 
 # helper function 2
-cv_mse_lambda_func<-function(index_fold,Z,W,y,
+cv_mse_lambda_func<-function(index_fold,X,Z,y,
                              C_half,study_info,
                              lambda_list,final_alpha,
                              w_adaptive,pseudo_Xy){
     fold_mse_lambda<-sapply(1:length(index_fold), function(cur_fold){
         index_test<-index_fold[[cur_fold]]
-        Ztrain<-Z[-index_test,]
-        Ztest<-Z[index_test,]
-        if(!is.null(W)){
-            Wtrain<-W[-index_test,]
-            Wtest<-W[index_test,]
+        Xtrain<-X[-index_test,]
+        Xtest<-X[index_test,]
+        if(!is.null(Z)){
+            Ztrain<-Z[-index_test,]
+            Ztest<-Z[index_test,]
         }else{
-            Wtrain<-NULL
-            Wtest<-NULL}
+            Ztrain<-NULL
+            Ztest<-NULL}
         ytrain<-y[-index_test]
         ytest<-y[index_test]
-        pseudo_Xy_list_train<-pseudo_Xy(C_half,Ztrain,Wtrain,
+        pseudo_Xy_list_train<-pseudo_Xy(C_half,Xtrain,Ztrain,
                                         ytrain,study_info)
-        initial_sf_train<-nrow(Ztrain)/sqrt(nrow(pseudo_Xy_list_train$pseudo_X))
+        initial_sf_train<-nrow(Xtrain)/sqrt(nrow(pseudo_Xy_list_train$pseudo_X))
         pseudo_X_train<-pseudo_Xy_list_train$pseudo_X/initial_sf_train
         pseudo_y_train<-pseudo_Xy_list_train$pseudo_y/initial_sf_train
         mse_lam<-sapply(lambda_list,function(cur_lam){
@@ -123,7 +123,7 @@ cv_mse_lambda_func<-function(index_fold,Z,W,y,
                            standardize=F,intercept=F,
                            alpha = final_alpha,penalty.factor = w_adaptive,lambda = cur_lam)
             cur_beta<-coef.glmnet(cv_fit)[-1]
-            mean((cbind(Ztest,Wtest)%*%cur_beta - ytest)^2)
+            mean((cbind(Xtest,Ztest)%*%cur_beta - ytest)^2)
         })
         mse_lam
     })
@@ -133,45 +133,45 @@ cv_mse_lambda_func<-function(index_fold,Z,W,y,
 
 # helper function 3
 holdout_mse_lambda_func<-function(lambda_list,pseudo_X_train,pseudo_y_train,
-                                  final_alpha,w_adaptive,Ztest,Wtest,ytest){
+                                  final_alpha,w_adaptive,Xtest,Ztest,ytest){
     mse_lam<-sapply(lambda_list,function(cur_lam){
         cv_fit<-glmnet(x= (pseudo_X_train),y= (pseudo_y_train),
                        standardize=F,intercept=F,
                        alpha = final_alpha,penalty.factor = w_adaptive,lambda = cur_lam)
         cur_beta<-coef.glmnet(cv_fit)[-1]
-        mean((cbind(Ztest,Wtest)%*%cur_beta - ytest)^2)
+        mean((cbind(Xtest,Ztest)%*%cur_beta - ytest)^2)
     })
     mse_lam
 }
 
 #helper function 4
-holdout_mse_lambda_ratio_func<-function(lambda_list,ratio_range,pZ,pW,
+holdout_mse_lambda_ratio_func<-function(lambda_list,ratio_range,pX,pZ,
                                         w_adaptive,pseudo_X_train,pseudo_y_train,
-                                        final_alpha,Ztest,Wtest,ytest){
+                                        final_alpha,Xtest,Ztest,ytest){
     mse_lam_ratio<-sapply(lambda_list,function(cur_lam){
         sapply(ratio_range,function(cur_ratio){
-            ratio_vec<-c(rep(cur_ratio,pZ),rep(1,pW))
+            ratio_vec<-c(rep(cur_ratio,pX),rep(1,pZ))
             w_adaptive_ratio<-w_adaptive*ratio_vec
             cv_fit<-glmnet(x=pseudo_X_train,y=pseudo_y_train,
                            standardize=F,intercept=F,alpha = final_alpha,
                            penalty.factor = w_adaptive_ratio,
                            lambda = cur_lam)
             cur_beta<-coef.glmnet(cv_fit)[-1]
-            mean((cbind(Ztest,Wtest)%*%cur_beta - ytest)^2)
+            mean((cbind(Xtest,Ztest)%*%cur_beta - ytest)^2)
         })
     }) # row is ratio_range & col is lambda_list
     mse_lam_ratio
 }
 
 htlgmm.linear<-function(
-        y,Z,W=NULL,
+        y,X,Z=NULL,
         study_info=NULL,
         summary_type = "multi",
         penalty_type = "lasso",
         initial_with_type = "ridge",
         beta_initial = NULL,
+        remove_penalty_X = FALSE,
         remove_penalty_Z = FALSE,
-        remove_penalty_W = FALSE,
         tune_ratio = TRUE,
         fix_lambda = NULL,
         lambda_list = NULL,
@@ -211,54 +211,54 @@ htlgmm.linear<-function(
     if(!is.null(fix_ratio)){
         if(tune_ratio){
             stop("If ratio is fixed, please set tune_ratio as FALSE")
-        }else if(remove_penalty_Z | remove_penalty_W){
+        }else if(remove_penalty_X | remove_penalty_Z){
             stop("If ratio is fixed, please set remove_penalty's as FALSE")
         }
     }
     # X and y should be scaled to avoid potential mismatch of intercept term.
     # n for sample size; p for feature size
-    nZ<-nrow(Z)
-    nZext<-study_info[[1]]$Sample_size
-    pZ<-ncol(Z)
-    if(is.null(W)){pW<-0}else{pW<-ncol(W)}
-    if(nZ<2*pZ+pW){use_sparseC<-TRUE}
-    ZW<-cbind(Z,W)
-    Zid<-1:pZ
-    id<-(pZ+1):(pZ+pW)
-    fix_penalty<-rep(1,pZ+pW)
+    nX<-nrow(X)
+    nXext<-study_info[[1]]$Sample_size
+    pX<-ncol(X)
+    if(is.null(Z)){pZ<-0}else{pZ<-ncol(Z)}
+    if(nX<2*pX+pZ){use_sparseC<-TRUE}
+    XZ<-cbind(X,Z)
+    Xid<-1:pX
+    id<-(pX+1):(pX+pZ)
+    fix_penalty<-rep(1,pX+pZ)
+    if(remove_penalty_X){fix_penalty[Xid]<-0}
     if(remove_penalty_Z){fix_penalty[Zid]<-0}
-    if(remove_penalty_W){fix_penalty[Wid]<-0}
-    if(!is.null(fix_ratio)){fix_penalty[Zid]<-fix_ratio}
-    ZWtZW<-crossprod(ZW)
-    ZtZ<-crossprod(Z)
+    if(!is.null(fix_ratio)){fix_penalty[Xid]<-fix_ratio}
+    XZtXZ<-crossprod(XZ)
+    xtx<-crossprod(X)
     if (summary_type == "uni"){
-        diag_theta_sd<-sapply(1:pZ,function(id){
-            sqrt(study_info[[id]]$Covariance)*c(Z[,id]%*%Z[,id])})
-        var_U2<-t(diag_theta_sd*cor(Z))*diag_theta_sd/nZ
+        diag_theta_sd<-sapply(1:pX,function(id){
+            sqrt(study_info[[id]]$Covariance)*c(X[,id]%*%X[,id])})
+        var_U2<-t(diag_theta_sd*cor(X))*diag_theta_sd/nX
     }else if (summary_type == "multi"){
-        var_U2<-ZtZ%*%study_info[[1]]$Covariance%*%ZtZ/nZ
+        var_U2<-xtx%*%study_info[[1]]$Covariance%*%xtx/nX
     }
     if(!is.null(beta_initial)){
-        if(length(beta_initial)!=pZ+pW){
-            warning("beta_initial should be from Z,W,G.\n Length not match, compute default initial instead.")
+        if(length(beta_initial)!=pX+pZ){
+            warning("beta_initial should be from X,Z,G.\n Length not match, compute default initial instead.")
             beta_initial<-NULL
         }
     }
 
     if(is.null(beta_initial) & initial_with_type %in% c("ridge","lasso")){
         if(initial_with_type == "ridge"){initial_alpha=0}else{initial_alpha=1}
-        fit_initial<-cv.glmnet(x=ZW,y= y,alpha = initial_alpha,penalty.factor = fix_penalty)
+        fit_initial<-cv.glmnet(x=XZ,y= y,alpha = initial_alpha,penalty.factor = fix_penalty)
         beta_initial<-c(coef.glmnet(fit_initial,s="lambda.min")[-1])
     }else if(is.null(beta_initial)){
         # Initial estimation of C by GMM
-        var_U1<-ZWtZW/nZ*c(var(y))
+        var_U1<-XZtXZ/nX*c(var(y))
         C_11_half<-diag(1/sqrt(diag(var_U1)))
         C_22_half<-diag(1/sqrt(diag(var_U2)))
         C_half<-adiag(C_11_half,C_22_half)
 
         # Prepare for initial model
-        pseudo_Xy_list<-pseudo_Xy(C_half,Z,W,y,study_info)
-        initial_sf<-nZ/sqrt(nrow(pseudo_Xy_list$pseudo_X))
+        pseudo_Xy_list<-pseudo_Xy(C_half,X,Z,y,study_info)
+        initial_sf<-nX/sqrt(nrow(pseudo_Xy_list$pseudo_X))
         pseudo_X<-pseudo_Xy_list$pseudo_X/initial_sf
         pseudo_y<-pseudo_Xy_list$pseudo_y/initial_sf
         fit_initial<-cv.glmnet(x= pseudo_X,y= pseudo_y,standardize=F,intercept=F,alpha = 0,penalty.factor = fix_penalty)
@@ -270,9 +270,9 @@ htlgmm.linear<-function(
         w_adaptive<-w_adaptive*fix_penalty
     }else{w_adaptive<-fix_penalty}
     # Refined estimation of C
-    var_1st_U_beta_theta<-var_U_beta_theta_func(Z = Z,W = W, y = y,beta = beta_initial,
+    var_1st_U_beta_theta<-var_U_beta_theta_func(X = X,Z = Z, y = y,beta = beta_initial,
                                                 study_info = study_info)
-    var_2nd_grad_times_theta_hat = adiag(matrix(0,nrow = pZ+pW,ncol = pZ+pW),var_U2)
+    var_2nd_grad_times_theta_hat = adiag(matrix(0,nrow = pX+pZ,ncol = pX+pZ),var_U2)
     inv_C = var_1st_U_beta_theta + var_2nd_grad_times_theta_hat
 
     if(use_sparseC){
@@ -282,8 +282,8 @@ htlgmm.linear<-function(
         C_half<-inv_C_svd$v%*%diag(1/sqrt(inv_C_svd$d))%*%t(inv_C_svd$u)
     }
 
-    pseudo_Xy_list<-pseudo_Xy(C_half,Z,W,y,study_info)
-    initial_sf<-nZ/sqrt(nrow(pseudo_Xy_list$pseudo_X))
+    pseudo_Xy_list<-pseudo_Xy(C_half,X,Z,y,study_info)
+    initial_sf<-nX/sqrt(nrow(pseudo_Xy_list$pseudo_X))
     pseudo_X<-pseudo_Xy_list$pseudo_X/initial_sf
     pseudo_y<-pseudo_Xy_list$pseudo_y/initial_sf
 
@@ -299,10 +299,10 @@ htlgmm.linear<-function(
         if(fix_lambda<0){stop("The fixed lambda should be nonnegative.")}
     }
 
-    if(tune_ratio & !remove_penalty_Z & !remove_penalty_W){
+    if(tune_ratio & !remove_penalty_X & !remove_penalty_Z){
         if(is.null(ratio_range)){
-            if(is.null(ratio_lower)){ratio_lower<-sqrt(nZ/(nZ+nZext))/2}
-            if(is.null(ratio_upper)){ratio_upper<-(nZ)^(1/3)/2}
+            if(is.null(ratio_lower)){ratio_lower<-sqrt(nX/(nX+nXext))/2}
+            if(is.null(ratio_upper)){ratio_upper<-(nX)^(1/3)/2}
             #ratio_range<-exp(seq(log(ratio_lower),log(ratio_upper),(log(ratio_upper)-log(ratio_lower))/ratio_count))
             ratio_range<-(seq(sqrt(ratio_lower),sqrt(ratio_upper),(sqrt(ratio_upper)-sqrt(ratio_lower))/ratio_count)^2)
             ratio_range<-c(1,ratio_range)
@@ -321,37 +321,37 @@ htlgmm.linear<-function(
         if(length(unique(y)) <= 2){
             index_valid<-createDataPartition(as.numeric(y>0),p = holdout_p)$Resample1
         }else{index_valid<-createDataPartition(y,p = holdout_p)$Resample1}
-        Ztrain<-Z[-index_valid,]
-        Ztest<-Z[index_valid,]
-        if(!is.null(W)){
-            Wtrain<-W[-index_valid,]
-            Wtest<-W[index_valid,]
+        Xtrain<-X[-index_valid,]
+        Xtest<-X[index_valid,]
+        if(!is.null(Z)){
+            Ztrain<-Z[-index_valid,]
+            Ztest<-Z[index_valid,]
         }else{
-            Wtrain<-NULL
-            Wtest<-NULL}
+            Ztrain<-NULL
+            Ztest<-NULL}
         ytrain<-y[-index_valid]
         ytest<-y[index_valid]
 
-        pseudo_Xy_list_train<-pseudo_Xy(C_half,Ztrain,Wtrain,
+        pseudo_Xy_list_train<-pseudo_Xy(C_half,Xtrain,Ztrain,
                                         ytrain,study_info)
-        initial_sf_train<-nrow(Ztrain)/sqrt(nrow(pseudo_Xy_list_train$pseudo_X))
+        initial_sf_train<-nrow(Xtrain)/sqrt(nrow(pseudo_Xy_list_train$pseudo_X))
         pseudo_X_train<-pseudo_Xy_list_train$pseudo_X/initial_sf_train
         pseudo_y_train<-pseudo_Xy_list_train$pseudo_y/initial_sf_train
         if(tune_ratio){
-            holdout_mse<-holdout_mse_lambda_ratio_func(lambda_list,ratio_range,pZ,pW,
+            holdout_mse<-holdout_mse_lambda_ratio_func(lambda_list,ratio_range,pX,pZ,
                                                        w_adaptive,pseudo_X_train,pseudo_y_train,
-                                                       final_alpha,Ztest,Wtest,ytest)
+                                                       final_alpha,Xtest,Ztest,ytest)
 
             ids<-which(holdout_mse==min(holdout_mse),arr.ind = TRUE)
             final.ratio.min<-ratio_range[ids[1]]
             final.lambda.min<-lambda_list[ids[2]]
         }else{
             holdout_mse<-holdout_mse_lambda_func(lambda_list,pseudo_X_train,pseudo_y_train,
-                                                 final_alpha,w_adaptive,Ztest,Wtest,ytest)
+                                                 final_alpha,w_adaptive,Xtest,Ztest,ytest)
             final.lambda.min<-lambda_list[which.min(holdout_mse)]
             final.ratio.min<-1
         }
-        ratio_vec<-c(rep(final.ratio.min,pZ),rep(1,pW))
+        ratio_vec<-c(rep(final.ratio.min,pX),rep(1,pZ))
         w_adaptive_ratio<-w_adaptive*ratio_vec
         fit_final_lam_ratio<-glmnet(x= pseudo_X_train,y= pseudo_y_train,standardize=F,
                                     intercept=F,alpha = final_alpha,
@@ -370,22 +370,22 @@ htlgmm.linear<-function(
             index_fold<-createFolds(as.numeric(y>0),k = nfolds)
         }else{index_fold<-createFolds(y,k = nfolds)}
         if(tune_ratio){
-            cv_mse<-cv_mse_lambda_ratio_func(index_fold,Z,W,y,C_half,
+            cv_mse<-cv_mse_lambda_ratio_func(index_fold,X,Z,y,C_half,
                                              study_info,lambda_list,
-                                             ratio_range,pZ,pW,w_adaptive,
+                                             ratio_range,pX,pZ,w_adaptive,
                                              final_alpha,pseudo_Xy)
             ids<-which(cv_mse==min(cv_mse),arr.ind = TRUE)
             final.ratio.min<-ratio_range[ids[1]]
             final.lambda.min<-lambda_list[ids[2]]
         }else{
-            cv_mse<-cv_mse_lambda_func(index_fold,Z,W,y,
+            cv_mse<-cv_mse_lambda_func(index_fold,X,Z,y,
                                        C_half,study_info,
                                        lambda_list,final_alpha,
                                        w_adaptive,pseudo_Xy)
             final.lambda.min<-lambda_list[which.min(cv_mse)]
             final.ratio.min<-1
         }
-        ratio_vec<-c(rep(final.ratio.min,pZ),rep(1,pW))
+        ratio_vec<-c(rep(final.ratio.min,pX),rep(1,pZ))
         w_adaptive_ratio<-w_adaptive*ratio_vec
         fit_final_lam_ratio<-glmnet(x= pseudo_X,y= pseudo_y,standardize=F,
                                     intercept=F,alpha = final_alpha,
@@ -403,22 +403,22 @@ htlgmm.linear<-function(
     index_nonzero<-which(beta!=0)
     if(inference & length(index_nonzero) > 1){
         # Use final estimated beta to refine the C
-        var_1st_U_beta_theta<-var_U_beta_theta_func(Z = Z,W = W, y = y,beta = beta,
+        var_1st_U_beta_theta<-var_U_beta_theta_func(X = X,Z = Z, y = y,beta = beta,
                                                     study_info = study_info)
-        var_2nd_grad_times_theta_hat = adiag(matrix(0,nrow = pZ+pW,ncol = pZ+pW),var_U2)
+        var_2nd_grad_times_theta_hat = adiag(matrix(0,nrow = pX+pZ,ncol = pX+pZ),var_U2)
         inv_C = var_1st_U_beta_theta + var_2nd_grad_times_theta_hat
 
         inv_C_svd<-fast.svd(inv_C+diag(1e-15,nrow(inv_C)))
         C_half<-inv_C_svd$v%*%diag(1/sqrt(inv_C_svd$d))%*%t(inv_C_svd$u)
 
 
-        Sigsum_half<-cbind(ZWtZW/nZ,crossprod(ZW,Z)/nZ)%*%C_half
+        Sigsum_half<-cbind(XZtXZ/nX,crossprod(XZ,X)/nX)%*%C_half
         Sigsum_scaled<-Sigsum_half%*%t(Sigsum_half)
         Sigsum_scaled_nonzero<-Sigsum_scaled[index_nonzero,index_nonzero]
         inv_Sigsum_scaled_nonzero<-solve(Sigsum_scaled_nonzero)
         final_v<-diag(inv_Sigsum_scaled_nonzero)
 
-        pval_final<-pchisq(nZ*beta[index_nonzero]^2/final_v,1,lower.tail = F)
+        pval_final<-pchisq(nX*beta[index_nonzero]^2/final_v,1,lower.tail = F)
         pval_final1<-p.adjust(pval_final,method = "BH")
         corrected_pos<-index_nonzero[which(pval_final1<0.05)]
         return_list<-c(return_list,
