@@ -1,6 +1,6 @@
-#' tlgmm
+#' htlgmm
 #'
-#' @details tlgmm: Transfer Learning via generalized method of moments(GMM).
+#' @details htlgmm: Transfer Learning via generalized method of moments(GMM).
 #'
 #' @param y The y for response variable, which can be continous or binary.
 #' @param X The matched features for internal and external data.
@@ -12,11 +12,11 @@
 #' @param A Usually used in "binomial" family, e.g. the intercept term for logistic regression, where the default is 1.
 #' Usually not used in "gaussian" family.
 #' G are the features working for adjustment in reduced model, but G is not summarized in summary statistics(input:study_info).
-#' @param penalty_type The penalty type for tlgmm, chosen from c("lasso","adaptivelasso","ridge"). The default is "lasso".
+#' @param penalty_type The penalty type for htlgmm, chosen from c("lasso","adaptivelasso","ridge"). The default is "lasso".
 #' @param initial_with_type Get initial estimation for beta using internal data only
 #'  by cross validation using penalty regression, chosen from c("ridge","lasso"). The default is "ridge".
 #' @param beta_initial The initial estimation for beta if a consistent estimator is available.
-#' E.g., one may input tlgmm result as beta_initial for more rounds to refine the final estimation.
+#' E.g., one may input htlgmm result as beta_initial for more rounds to refine the final estimation.
 #' The default is NULL, and internal data is used for initial estimation.
 #' @param remove_penalty_X Not penalize X if it is TRUE. The default is FALSE.
 #' @param remove_penalty_Z Not penalize Z if it is TRUE. The default is FALSE.
@@ -83,19 +83,19 @@
 #' y<-scale(y,scale = FALSE)
 #' library(glmnet)
 #' res_glm<-glmnet(x=cbind(X[internal_index,],A[internal_index,]),y=y[internal_index],lambda=0)
-#' res_tlgmm_multi<-tlgmm(y[internal_index],X[internal_index,],A[internal_index,],
+#' res_htlgmm_multi<-htlgmm(y[internal_index],X[internal_index,],A[internal_index,],
 #'     summary_type = "multi",study_info = study_info_multi,lambda=0,use_sparseC = TRUE)
-#' res_tlgmm_uni<-tlgmm(y[internal_index],X[internal_index,],A[internal_index,],
+#' res_htlgmm_uni<-htlgmm(y[internal_index],X[internal_index,],A[internal_index,],
 #'     summary_type = "uni",study_info = study_info_uni,lambda=0,use_sparseC = TRUE)
 #'     ee_lasso<-round(sum((coefXZ-coef.glmnet(res_glm)[-1])^2),4)
-#' ee_tlgmm_lasso_multi<-round(sum((coefXZ-res_tlgmm_multi$beta)^2),4)
-#' ee_tlgmm_lasso_uni<-round(sum((coefXZ-res_tlgmm_uni$beta)^2),4)
-#' print(paste0("Estimation Error: ","lasso(",ee_lasso,"); tlgmm_lasso_multi(",
-#'              ee_tlgmm_lasso_multi,"); tlgmm_lasso_uni(",ee_tlgmm_lasso_uni,")"))
+#' ee_htlgmm_lasso_multi<-round(sum((coefXZ-res_htlgmm_multi$beta)^2),4)
+#' ee_htlgmm_lasso_uni<-round(sum((coefXZ-res_htlgmm_uni$beta)^2),4)
+#' print(paste0("Estimation Error: ","lasso(",ee_lasso,"); htlgmm_lasso_multi(",
+#'              ee_htlgmm_lasso_multi,"); htlgmm_lasso_uni(",ee_htlgmm_lasso_uni,")"))
 #'
 #'
 
-tlgmm<-function(
+htlgmm<-function(
         y,X,Z=NULL,
         study_info=NULL,
         summary_type = "multi",
@@ -138,7 +138,7 @@ tlgmm<-function(
     }
     if(family == "gaussian"){
         #warning("For gaussian family, no A is used. \n Just assume A is cancelled for full and reduced model.")
-        res<-tlgmm.linear(y,X,Z,study_info,summary_type,penalty_type,
+        res<-htlgmm.linear(y,X,Z,study_info,summary_type,penalty_type,
                            initial_with_type,beta_initial,
                            remove_penalty_X,remove_penalty_Z,
                            tune_ratio,fix_lambda,lambda_list,
@@ -147,7 +147,7 @@ tlgmm<-function(
                            inference,validation_type,
                            nfolds,holdout_p,use_sparseC,seed.use)
     }else{
-        res<-tlgmm.binary(y,X,Z,A,study_info,summary_type,penalty_type,
+        res<-htlgmm.binary(y,X,Z,A,study_info,summary_type,penalty_type,
                            initial_with_type,beta_initial,
                            remove_penalty_X,remove_penalty_Z,
                            tune_ratio,fix_lambda,lambda_list,
@@ -161,9 +161,9 @@ tlgmm<-function(
 
 
 
-#' cv.tlgmm: cross validtaion for tlgmm(integration with generalized method of moments).
+#' cv.htlgmm: cross validtaion for htlgmm(integration with generalized method of moments).
 #'
-#' @details cross validtaion for tlgmm: integration with generalized method of moments(gmm).
+#' @details cross validtaion for htlgmm: integration with generalized method of moments(gmm).
 #'
 #' @param y The y for response variable, which can be continouse or binary.
 #' @param X The matched features for internal and external data.
@@ -175,11 +175,11 @@ tlgmm<-function(
 #' @param A Usually used in "binomial" family, e.g. the intercept term for logistic regression, where the default is 1.
 #' Usually not used in "gaussian" family.
 #' G are the features working for adjustment in reduced model, but G is not summarized in summary statistics(input:study_info).
-#' @param penalty_type The penalty type for tlgmm, chosen from c("lasso","adaptivelasso","ridge"). The default is "lasso".
+#' @param penalty_type The penalty type for htlgmm, chosen from c("lasso","adaptivelasso","ridge"). The default is "lasso".
 #' @param initial_with_type Get initial estimation for beta using internal data only
 #'  by cross validation using penalty regression, chosen from c("ridge","lasso"). The default is "ridge".
 #' @param beta_initial The initial estimation for beta if a consistent estimator is available.
-#' E.g., one may input tlgmm result as beta_initial for more rounds to refine the final estimation.
+#' E.g., one may input htlgmm result as beta_initial for more rounds to refine the final estimation.
 #' The default is NULL, and internal data is used for initial estimation.
 #' @param remove_penalty_X Not penalize X if it is TRUE. The default is FALSE.
 #' @param remove_penalty_Z Not penalize Z if it is TRUE. The default is FALSE.
@@ -257,18 +257,18 @@ tlgmm<-function(
 #' y<-scale(y,scale = FALSE)
 #' library(glmnet)
 #' res_glm<-cv.glmnet(x=cbind(X[internal_index,],A[internal_index,]),y=y[internal_index])
-#' res_tlgmm_multi<-cv.tlgmm(y[internal_index],X[internal_index,],A[internal_index,],
+#' res_htlgmm_multi<-cv.htlgmm(y[internal_index],X[internal_index,],A[internal_index,],
 #'     summary_type = "multi",study_info = study_info_multi,tune_ratio = FALSE,use_sparseC = TRUE)
-#' res_tlgmm_uni<-cv.tlgmm(y[internal_index],X[internal_index,],A[internal_index,],
+#' res_htlgmm_uni<-cv.htlgmm(y[internal_index],X[internal_index,],A[internal_index,],
 #'     summary_type = "uni",study_info = study_info_uni,tune_ratio = FALSE,use_sparseC = TRUE)
 #' ee_lasso<-round(sum((coefXZ-coef.glmnet(res_glm,s="lambda.min")[-1])^2),4)
-#' ee_tlgmm_lasso_multi<-round(sum((coefXZ-res_tlgmm_multi$beta)^2),4)
-#' ee_tlgmm_lasso_uni<-round(sum((coefXZ-res_tlgmm_uni$beta)^2),4)
-#' print(paste0("Estimation Error: ","lasso(",ee_lasso,"); tlgmm_lasso_multi(",
-#'              ee_tlgmm_lasso_multi,"); tlgmm_lasso_uni(",ee_tlgmm_lasso_uni,")"))
+#' ee_htlgmm_lasso_multi<-round(sum((coefXZ-res_htlgmm_multi$beta)^2),4)
+#' ee_htlgmm_lasso_uni<-round(sum((coefXZ-res_htlgmm_uni$beta)^2),4)
+#' print(paste0("Estimation Error: ","lasso(",ee_lasso,"); htlgmm_lasso_multi(",
+#'              ee_htlgmm_lasso_multi,"); htlgmm_lasso_uni(",ee_htlgmm_lasso_uni,")"))
 #'
 #'
-cv.tlgmm<-function(
+cv.htlgmm<-function(
         y,X,Z=NULL,
         study_info=NULL,
         summary_type = "multi",
@@ -300,7 +300,7 @@ cv.tlgmm<-function(
     }
     if(family == "gaussian"){
         #warning("For gaussian family, no A is used. \n Just assume A is cancelled for full and reduced model.")
-        res<-tlgmm.linear(y,X,Z,study_info,summary_type,penalty_type,
+        res<-htlgmm.linear(y,X,Z,study_info,summary_type,penalty_type,
                            initial_with_type,beta_initial,
                            remove_penalty_X,remove_penalty_Z,
                            tune_ratio,fix_lambda,lambda_list,
@@ -309,7 +309,7 @@ cv.tlgmm<-function(
                            inference,validation_type,
                            nfolds,holdout_p,use_sparseC,seed.use)
     }else{
-        res<-tlgmm.binary(y,X,Z,A,study_info,summary_type,penalty_type,
+        res<-htlgmm.binary(y,X,Z,A,study_info,summary_type,penalty_type,
                            initial_with_type,beta_initial,
                            remove_penalty_X,remove_penalty_Z,
                            tune_ratio,fix_lambda,lambda_list,

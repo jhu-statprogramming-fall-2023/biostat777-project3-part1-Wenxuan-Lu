@@ -221,7 +221,7 @@ tlgmm.linear<-function(
     nXext<-study_info[[1]]$Sample_size
     pX<-ncol(X)
     if(is.null(Z)){pZ<-0}else{pZ<-ncol(Z)}
-    if(nX<2*pX+p){use_sparseC<-TRUE}
+    if(nX<2*pX+pZ){use_sparseC<-TRUE}
     XZ<-cbind(X,Z)
     Xid<-1:pX
     id<-(pX+1):(pX+pZ)
