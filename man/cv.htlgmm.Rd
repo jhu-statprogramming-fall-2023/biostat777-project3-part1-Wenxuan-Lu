@@ -2,7 +2,7 @@
 % Please edit documentation in R/htlgmm.R
 \name{cv.htlgmm}
 \alias{cv.htlgmm}
-\title{cv.htlgmm: cross validtaion for htlgmm(integration with generalized method of moments).}
+\title{cv.htlgmm: cross validtaion for htlgmm (Heterogeneous Transfer Learning via generalized method of moments).}
 \usage{
 cv.htlgmm(
   y,
@@ -16,7 +16,7 @@ cv.htlgmm(
   beta_initial = NULL,
   remove_penalty_Z = FALSE,
   remove_penalty_W = FALSE,
-  tune_ratio = TRUE,
+  tune_ratio = FALSE,
   fix_lambda = NULL,
   lambda_list = NULL,
   fix_ratio = NULL,
@@ -117,8 +117,8 @@ When internal data sample size is large enough, use_sparseC = FALSE is recommend
 }
 }
 \description{
-cv.htlgmm: cross validtaion for htlgmm(integration with generalized method of moments).
+cv.htlgmm: cross validtaion for htlgmm (Heterogeneous Transfer Learning via generalized method of moments).
 }
 \details{
-cross validtaion for htlgmm: integration with generalized method of moments(gmm).
+Cross validtaion for htlgmm.
 }
