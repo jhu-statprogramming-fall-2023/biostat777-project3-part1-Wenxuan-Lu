@@ -55,44 +55,6 @@
 #' @importFrom MASS ginv
 #' @export
 #'
-#' @examples
-#' set.seed(1)
-#' X<-matrix(rnorm(18000),900,20)
-#' Z<-matrix(rnorm(2700),900,3)
-#' X<-scale(X)
-#' Z<-scale(Z)
-#' coefXZ<-c(rep(0,23))
-#' coefXZ[1:3]<-0.5
-#' coefXZ[21:22]<-0.5
-#' internal_index<-1:100
-#' external_index<-101:900
-#' y<-cbind(X,Z)%*%coefXZ+rnorm(900,0,1)
-#' #y_binary<-rbinom(n=900,size=1,prob=locfit::expit(cbind(X,Z)%*%coefXZ))
-#' study_info_multi<-list()
-#' reslm<-lm(y~.,data = data.frame(y=y[external_index],X[external_index,]))
-#' study.m = list(Coeff=reslm$coefficients[-1],
-#'                Covariance=vcov(reslm)[-1,-1],Sample_size=800)
-#' study_info_multi[[1]] <- study.m
-#' study_info_uni<-list()
-#' for(i in 1:20){
-#' reslm<-lm(y~.,data = data.frame(y=y[external_index],X[external_index,i]))
-#' study.m = list(Coeff=reslm$coefficients[-1],
-#'                Covariance=vcov(reslm)[-1,-1],Sample_size=800)
-#' study_info_uni[[i]] <- study.m}
-#'
-#' y<-scale(y,scale = FALSE)
-#' library(glmnet)
-#' res_glm<-glmnet(x=cbind(X[internal_index,],A[internal_index,]),y=y[internal_index],lambda=0)
-#' res_htlgmm_multi<-htlgmm(y[internal_index],X[internal_index,],A[internal_index,],
-#'     summary_type = "multi",study_info = study_info_multi,lambda=0,use_sparseC = TRUE)
-#' res_htlgmm_uni<-htlgmm(y[internal_index],X[internal_index,],A[internal_index,],
-#'     summary_type = "uni",study_info = study_info_uni,lambda=0,use_sparseC = TRUE)
-#'     ee_lasso<-round(sum((coefXZ-coef.glmnet(res_glm)[-1])^2),4)
-#' ee_htlgmm_lasso_multi<-round(sum((coefXZ-res_htlgmm_multi$beta)^2),4)
-#' ee_htlgmm_lasso_uni<-round(sum((coefXZ-res_htlgmm_uni$beta)^2),4)
-#' print(paste0("Estimation Error: ","lasso(",ee_lasso,"); htlgmm_lasso_multi(",
-#'              ee_htlgmm_lasso_multi,"); htlgmm_lasso_uni(",ee_htlgmm_lasso_uni,")"))
-#'
 #'
 
 htlgmm<-function(
@@ -229,7 +191,6 @@ htlgmm<-function(
 #' @importFrom MASS ginv
 #' @export
 #'
-#' @examples
 #'
 cv.htlgmm<-function(
         y,Z,W=NULL,
