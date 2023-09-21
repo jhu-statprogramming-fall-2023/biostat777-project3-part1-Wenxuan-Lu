@@ -202,7 +202,7 @@ cv.htlgmm<-function(
         beta_initial = NULL,
         remove_penalty_Z = FALSE,
         remove_penalty_W = FALSE,
-        tune_ratio = TRUE,
+        tune_ratio = FALSE,
         fix_lambda = NULL,
         lambda_list = NULL,
         fix_ratio = NULL,
