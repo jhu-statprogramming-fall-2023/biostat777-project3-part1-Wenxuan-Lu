@@ -1,4 +1,4 @@
-#pacman::p_load(expm,magic,glmnet,cluster,MASS,locfit,corpcor,caret,mvtnorm)
+pacman::p_load(expm,magic,glmnet,cluster,MASS,locfit,corpcor,caret,mvtnorm)
 pseudo_Xy_multiv_addition<-function(
         C_half,Z,W,y,study_info){
     ZW<-cbind(Z,W)

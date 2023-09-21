@@ -2,24 +2,24 @@
 
 
 
-This works for README file for `tlgmm` function. 
+This works for README file for `htlgmm` function. 
 
-### $p_{\bf X}=20,p_{\bf A}=3$
+### $p_{\bf Z}=20,p_{\bf W}=3$
 
 ```R
 # Simulation Example
 set.seed(1)
-X<-matrix(rnorm(18000),900,20)
-A<-matrix(rnorm(2700),900,3)
-X<-scale(X)
-A<-scale(A)
-coefXA<-c(rep(0,23))
-coefXA[1:3]<-0.5
-coefXA[21:22]<-0.5
-internal_index<-1:100
+Z<-matrix(rnorm(18000),900,20)
+W<-matrix(rnorm(2700),900,3)
+Z<-scale(Z)
+W<-scale(W)
+coefZW<-c(rep(0,23))
+coefZW[1:3]<-0.5
+coefZW[21:22]<-0.5
+main_index<-1:100
 external_index<-101:900
-y<-cbind(X,A)%*%coefXA+rnorm(900,0,1)
-#y_binary<-rbinom(n=900,size=1,prob=locfit::expit(cbind(X,A)%*%coefXA))
+y<-cbind(Z,W)%*%coefZW+rnorm(900,0,1)
+#y_binary<-rbinom(n=900,size=1,prob=locfit::expit(cbind(Z,W)%*%coefZW))
 study_info_multi<-list()
 reslm<-lm(y~.,data = data.frame(y=y[external_index],X[external_index,]))
 study.m = list(Coeff=reslm$coefficients[-1],
@@ -35,19 +35,18 @@ study_info_uni[[i]] <- study.m}
 y<-scale(y,scale = FALSE)
 library(glmnet)
 res_glm<-cv.glmnet(x=cbind(X[internal_index,],A[internal_index,]),y=y[internal_index])
-res_tlgmm_multi<-cv.tlgmm(y[internal_index],X[internal_index,],A[internal_index,],
+res_htlgmm_multi<-cv.htlgmm(y[internal_index],X[internal_index,],A[internal_index,],
     summary_type = "multi",study_info = study_info_multi,tune_ratio = FALSE,use_sparseC = TRUE)
-res_tlgmm_uni<-cv.tlgmm(y[internal_index],X[internal_index,],A[internal_index,],
+res_htlgmm_uni<-cv.htlgmm(y[internal_index],X[internal_index,],A[internal_index,],
     summary_type = "uni",study_info = study_info_uni,tune_ratio = FALSE,use_sparseC = TRUE)
-ee_lasso<-round(sum((coefXA-coef.glmnet(res_glm,s="lambda.min")[-1])^2),4)
-ee_tlgmm_lasso_multi<-round(sum((coefXA-res_tlgmm_multi$beta)^2),4)
-ee_tlgmm_lasso_uni<-round(sum((coefXA-res_tlgmm_uni$beta)^2),4)
-print(paste0("Estimation Error: ","lasso(",ee_lasso,"); tlgmm_lasso_multi(",
-             ee_tlgmm_lasso_multi,"); tlgmm_lasso_uni(",ee_tlgmm_lasso_uni,")"))
+ee_lasso<-round(sum((coefZW-coef.glmnet(res_glm,s="lambda.min")[-1])^2),4)
+ee_htlgmm_lasso_multi<-round(sum((coefZW-res_htlgmm_multi$beta)^2),4)
+ee_htlgmm_lasso_uni<-round(sum((coefZW-res_htlgmm_uni$beta)^2),4)
+print(paste0("Estimation Error: ","lasso(",ee_lasso,"); htlgmm_lasso_multi(",
+             ee_htlgmm_lasso_multi,"); htlgmm_lasso_uni(",ee_htlgmm_lasso_uni,")"))
 
 ```
 
 ```R
-"Estimation Error: lasso(0.2699); tlgmm_lasso_multi(0.0866); tlgmm_lasso_uni(0.1394)"
+"Estimation Error: lasso(0.2699); htlgmm_lasso_multi(0.0866); htlgmm_lasso_uni(0.1394)"
 ```
-

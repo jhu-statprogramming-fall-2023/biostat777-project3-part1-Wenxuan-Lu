@@ -1,16 +1,15 @@
 #' htlgmm
 #'
-#' @details htlgmm: Transfer Learning via generalized method of moments(GMM).
+#' @details htlgmm: Heterogeneous Transfer Learning via generalized method of moments(GMM).
 #'
-#' @param y The y for response variable, which can be continous or binary.
-#' @param X The matched features for internal and external data.
-#' @param Z The mismatched features only in internal data, the default is NULL.
-#' @param study_info The summary statistics for X only from external data,
+#' @param y The y is the variable of interest.
+#' @param Z The overlapping features between main study and external study.
+#' @param W The unmatched features only in main study, the default is NULL.
+#' @param study_info The summary statistics for Z only from external study,
 #' which can be summarized in the type of multivariate version or univariate version.
-#' @param summary_type The summary statistics type, chosen from c("multi","uni"), where the default is "multi".
 #' @param family The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".
-#' @param A Usually used in "binomial" family, e.g. the intercept term for logistic regression, where the default is 1.
-#' Usually not used in "gaussian" family.
+#' @param A Study specific adjustment factors, in particular, intercept term in logistic regression. The default is intercept term for
+#'
 #' G are the features working for adjustment in reduced model, but G is not summarized in summary statistics(input:study_info).
 #' @param penalty_type The penalty type for htlgmm, chosen from c("lasso","adaptivelasso","ridge"). The default is "lasso".
 #' @param initial_with_type Get initial estimation for beta using internal data only
@@ -18,11 +17,12 @@
 #' @param beta_initial The initial estimation for beta if a consistent estimator is available.
 #' E.g., one may input htlgmm result as beta_initial for more rounds to refine the final estimation.
 #' The default is NULL, and internal data is used for initial estimation.
-#' @param remove_penalty_X Not penalize X if it is TRUE. The default is FALSE.
-#' @param remove_penalty_Z Not penalize Z if it is TRUE. The default is FALSE.
+#' @param remove_penalty_Z Not penalize overlapping features Z if it is TRUE. The default is FALSE.
+#' @param remove_penalty_W Not penalize unmatched features W if it is TRUE. The default is FALSE.
 #' @param lambda Without cross validation, fix the lambda. The default is NULL.
-#' @param ratio The fixed ratio of X for bi-lambda strategy. The default is NULL. If it is NULL, select the best ratio via cross validation or holdout validation.
+#' @param ratio The fixed ratio of X for two-lambda strategy. The default is NULL.
 #' @param gamma_adaptivelasso The gamma for adaptive lasso. Select from c(1/2,1,2). The default is 1/2.
+#' @param summary_type The summary statistics type, chosen from c("multi","uni"), where the default is "multi".
 #' @param inference Whether to do post-selection inference, only work for adaptivelasso. The default is FALSE.
 #' @param use_sparseC Whether to use approximate version of weighting matrix C.
 #' If approximation, use the diagonal of inverse of C(inv_C) to approximate the inv_C. The default is FALSE.
@@ -96,16 +96,15 @@
 #'
 
 htlgmm<-function(
-        y,X,Z=NULL,
+        y,X,W=NULL,
         study_info=NULL,
-        summary_type = "multi",
         family = "gaussian",
         A=1,
         penalty_type = "lasso",
         initial_with_type = "ridge",
         beta_initial = NULL,
-        remove_penalty_X = FALSE,
         remove_penalty_Z = FALSE,
+        remove_penalty_W = FALSE,
         #tune_ratio = TRUE,
         lambda = 0,
         #lambda_list = NULL,
@@ -115,6 +114,7 @@ htlgmm<-function(
         #ratio_count = 10,
         #ratio_range = NULL,
         gamma_adaptivelasso = 1/2,
+        summary_type = "multi",
         inference = FALSE,
         #validation_type = "cv",
         #nfolds = 10,
@@ -138,18 +138,18 @@ htlgmm<-function(
     }
     if(family == "gaussian"){
         #warning("For gaussian family, no A is used. \n Just assume A is cancelled for full and reduced model.")
-        res<-htlgmm.linear(y,X,Z,study_info,summary_type,penalty_type,
+        res<-htlgmm.linear(y,Z,W,study_info,summary_type,penalty_type,
                            initial_with_type,beta_initial,
-                           remove_penalty_X,remove_penalty_Z,
+                           remove_penalty_Z,remove_penalty_W,
                            tune_ratio,fix_lambda,lambda_list,
                            fix_ratio,ratio_lower,ratio_upper,
                            ratio_count,ratio_range,gamma_adaptivelasso,
                            inference,validation_type,
                            nfolds,holdout_p,use_sparseC,seed.use)
     }else{
-        res<-htlgmm.binary(y,X,Z,A,study_info,summary_type,penalty_type,
+        res<-htlgmm.binary(y,Z,W,A,study_info,summary_type,penalty_type,
                            initial_with_type,beta_initial,
-                           remove_penalty_X,remove_penalty_Z,
+                           remove_penalty_Z,remove_penalty_W,
                            tune_ratio,fix_lambda,lambda_list,
                            fix_ratio,ratio_lower,ratio_upper,
                            ratio_count,ratio_range,gamma_adaptivelasso,
@@ -167,9 +167,7 @@ htlgmm<-function(
 #'
 #' @param y The y for response variable, which can be continouse or binary.
 #' @param X The matched features for internal and external data.
-#' @param Z The mismatched features only in internal data, the default is NULL.
-#' @param study_info The summary statistics for X only from external data,
-#' which can be summarized in the type of multivariate version or univariate version.
+#' @param W The mismatched features only in internal data, the default is NULL.
 #' @param summary_type The summary statistics type, chosen from c("multi","uni"), where the default is "multi".
 #' @param family The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".
 #' @param A Usually used in "binomial" family, e.g. the intercept term for logistic regression, where the default is 1.
@@ -181,18 +179,20 @@ htlgmm<-function(
 #' @param beta_initial The initial estimation for beta if a consistent estimator is available.
 #' E.g., one may input htlgmm result as beta_initial for more rounds to refine the final estimation.
 #' The default is NULL, and internal data is used for initial estimation.
-#' @param remove_penalty_X Not penalize X if it is TRUE. The default is FALSE.
-#' @param remove_penalty_Z Not penalize Z if it is TRUE. The default is FALSE.
-#' @param tune_ratio Whether to use bi-lambda stratgey. The default is TRUE.
+#' @param remove_penalty_Z Not penalize X if it is TRUE. The default is FALSE.
+#' @param remove_penalty_W Not penalize W if it is TRUE. The default is FALSE.
+#' @param tune_ratio Whether to use two-lambda stratgey. The default is TRUE.
 #' @param fix_lambda Without cross validation, fix the lambda. The default is NULL.
 #' @param lambda_list Customize the input lambda list for validation. The default is NULL.
-#' @param fix_ratio The fixed ratio of X for bi-lambda strategy. The default is NULL. If it is NULL, select the best ratio via cross validation or holdout validation.
+#' @param fix_ratio The fixed ratio of X for two-lambda strategy. The default is NULL. If it is NULL, select the best ratio via cross validation or holdout validation.
 #' @param ratio_lower The lower bound for ratio range. The default is NULL.
 #' @param ratio_upper The upper bound for ratio range. The default is NULL.
 #' @param ratio_count The lengte of ratio list. The default is 10.
 #' @param ratio_range The ratio range if it is preset. The default is NULL.
 #' @param gamma_adaptivelasso The gamma for adaptive lasso. Select from c(1/2,1,2). The default is 1/2.
 #' @param inference Whether to do post-selection inference, only work for adaptivelasso. The default is FALSE.
+#' @param study_info The summary statistics for X only from external data,
+#' which can be summarized in the type of multivariate version or univariate version.
 #' @param validation_type How to perform validation to find the best lamdba or ratio.
 #' Select from c("cv","holdout"). The default is "cv".
 #' @param nfolds The fold number for cross validation. Only work for validation_type = "cv".The default is 10.
@@ -230,55 +230,17 @@ htlgmm<-function(
 #' @export
 #'
 #' @examples
-#' set.seed(1)
-#' X<-matrix(rnorm(18000),900,20)
-#' Z<-matrix(rnorm(2700),900,3)
-#' X<-scale(X)
-#' Z<-scale(Z)
-#' coefXZ<-c(rep(0,23))
-#' coefXZ[1:3]<-0.5
-#' coefXZ[21:22]<-0.5
-#' internal_index<-1:100
-#' external_index<-101:900
-#' y<-cbind(X,Z)%*%coefXZ+rnorm(900,0,1)
-#' #y_binary<-rbinom(n=900,size=1,prob=locfit::expit(cbind(X,Z)%*%coefXZ))
-#' study_info_multi<-list()
-#' reslm<-lm(y~.,data = data.frame(y=y[external_index],X[external_index,]))
-#' study.m = list(Coeff=reslm$coefficients[-1],
-#'                Covariance=vcov(reslm)[-1,-1],Sample_size=800)
-#' study_info_multi[[1]] <- study.m
-#' study_info_uni<-list()
-#' for(i in 1:20){
-#' reslm<-lm(y~.,data = data.frame(y=y[external_index],X[external_index,i]))
-#' study.m = list(Coeff=reslm$coefficients[-1],
-#'                Covariance=vcov(reslm)[-1,-1],Sample_size=800)
-#' study_info_uni[[i]] <- study.m}
-#'
-#' y<-scale(y,scale = FALSE)
-#' library(glmnet)
-#' res_glm<-cv.glmnet(x=cbind(X[internal_index,],A[internal_index,]),y=y[internal_index])
-#' res_htlgmm_multi<-cv.htlgmm(y[internal_index],X[internal_index,],A[internal_index,],
-#'     summary_type = "multi",study_info = study_info_multi,tune_ratio = FALSE,use_sparseC = TRUE)
-#' res_htlgmm_uni<-cv.htlgmm(y[internal_index],X[internal_index,],A[internal_index,],
-#'     summary_type = "uni",study_info = study_info_uni,tune_ratio = FALSE,use_sparseC = TRUE)
-#' ee_lasso<-round(sum((coefXZ-coef.glmnet(res_glm,s="lambda.min")[-1])^2),4)
-#' ee_htlgmm_lasso_multi<-round(sum((coefXZ-res_htlgmm_multi$beta)^2),4)
-#' ee_htlgmm_lasso_uni<-round(sum((coefXZ-res_htlgmm_uni$beta)^2),4)
-#' print(paste0("Estimation Error: ","lasso(",ee_lasso,"); htlgmm_lasso_multi(",
-#'              ee_htlgmm_lasso_multi,"); htlgmm_lasso_uni(",ee_htlgmm_lasso_uni,")"))
-#'
 #'
 cv.htlgmm<-function(
-        y,X,Z=NULL,
+        y,Z,W=NULL,
         study_info=NULL,
-        summary_type = "multi",
         family = "gaussian",
         A=1,
         penalty_type = "lasso",
         initial_with_type = "ridge",
         beta_initial = NULL,
-        remove_penalty_X = FALSE,
         remove_penalty_Z = FALSE,
+        remove_penalty_W = FALSE,
         tune_ratio = TRUE,
         fix_lambda = NULL,
         lambda_list = NULL,
@@ -289,6 +251,7 @@ cv.htlgmm<-function(
         ratio_range = NULL,
         gamma_adaptivelasso = 1/2,
         inference = FALSE,
+        summary_type = "multi",
         validation_type = "cv",
         nfolds = 10,
         holdout_p = 0.2,
@@ -300,18 +263,18 @@ cv.htlgmm<-function(
     }
     if(family == "gaussian"){
         #warning("For gaussian family, no A is used. \n Just assume A is cancelled for full and reduced model.")
-        res<-htlgmm.linear(y,X,Z,study_info,summary_type,penalty_type,
+        res<-htlgmm.linear(y,Z,W,study_info,summary_type,penalty_type,
                            initial_with_type,beta_initial,
-                           remove_penalty_X,remove_penalty_Z,
+                           remove_penalty_Z,remove_penalty_W,
                            tune_ratio,fix_lambda,lambda_list,
                            fix_ratio,ratio_lower,ratio_upper,
                            ratio_count,ratio_range,gamma_adaptivelasso,
                            inference,validation_type,
                            nfolds,holdout_p,use_sparseC,seed.use)
     }else{
-        res<-htlgmm.binary(y,X,Z,A,study_info,summary_type,penalty_type,
+        res<-htlgmm.binary(y,Z,W,A,study_info,summary_type,penalty_type,
                            initial_with_type,beta_initial,
-                           remove_penalty_X,remove_penalty_Z,
+                           remove_penalty_Z,remove_penalty_W,
                            tune_ratio,fix_lambda,lambda_list,
                            fix_ratio,ratio_lower,ratio_upper,
                            ratio_count,ratio_range,gamma_adaptivelasso,
