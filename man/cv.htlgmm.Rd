@@ -2,8 +2,7 @@
 % Please edit documentation in R/htlgmm.R
 \name{cv.htlgmm}
 \alias{cv.htlgmm}
-\title{cv.htlgmm works for cross validation for htlgmm (Heterogeneous Transfer Learning via Generalized Method of Moments).
-Fit a generalized linear model via penalized generalized method of moments. The input requires}
+\title{cv.htlgmm works for cross validation for htlgmm (Heterogeneous Transfer Learning via Generalized Method of Moments).}
 \usage{
 cv.htlgmm(
   y,
@@ -118,7 +117,6 @@ Select from c("cv","holdout"). The default is "cv".}
 }
 }
 \description{
-cv.htlgmm works for cross validation for htlgmm (Heterogeneous Transfer Learning via Generalized Method of Moments).
 Fit a generalized linear model via penalized generalized method of moments. The input requires
 }
 \details{

@@ -506,7 +506,7 @@ htlgmm.binary<-function(
                           "fix_lambda"=fix_lambda,
                           "fix_ratio"=fix_ratio)
     }else if(validation_type == 'holdout'){
-        index_valid<-createDatapartition(y,p = holdout_p)$Resample1
+        index_valid<-createDataPartition(y,p = holdout_p)$Resample1
         Ztrain<-Z[-index_valid,]
         Ztest<-Z[index_valid,]
         if(!is.null(W)){
