@@ -58,7 +58,7 @@
 #'
 
 htlgmm<-function(
-        y,X,W=NULL,
+        y,Z,W=NULL,
         study_info=NULL,
         family = "gaussian",
         A=1,
@@ -128,7 +128,7 @@ htlgmm<-function(
 #' @details Cross validation for htlgmm.
 #'
 #' @param y The y for response variable, which can be continouse or binary.
-#' @param X The matched features for internal and external data.
+#' @param Z The matched features for internal and external data.
 #' @param W The mismatched features only in internal data, the default is NULL.
 #' @param study_info The summary statistics for X only from external data,
 #' which can be summarized in the type of multivariate version or univariate version.

@@ -2,7 +2,8 @@
 % Please edit documentation in R/htlgmm.R
 \name{cv.htlgmm}
 \alias{cv.htlgmm}
-\title{cv.htlgmm: cross validtaion for htlgmm (Heterogeneous Transfer Learning via generalized method of moments).}
+\title{cv.htlgmm works for cross validation for htlgmm (Heterogeneous Transfer Learning via Generalized Method of Moments).
+Fit a generalized linear model via penalized generalized method of moments. The input requires}
 \usage{
 cv.htlgmm(
   y,
@@ -14,9 +15,13 @@ cv.htlgmm(
   penalty_type = "lasso",
   initial_with_type = "ridge",
   beta_initial = NULL,
+  use_sparseC = FALSE,
+  inference = FALSE,
+  tune_ratio = FALSE,
+  validation_type = "cv",
+  nfolds = 10,
   remove_penalty_Z = FALSE,
   remove_penalty_W = FALSE,
-  tune_ratio = FALSE,
   fix_lambda = NULL,
   lambda_list = NULL,
   fix_ratio = NULL,
@@ -25,17 +30,15 @@ cv.htlgmm(
   ratio_count = 10,
   ratio_range = NULL,
   gamma_adaptivelasso = 1/2,
-  inference = FALSE,
   summary_type = "multi",
-  validation_type = "cv",
-  nfolds = 10,
   holdout_p = 0.2,
-  use_sparseC = FALSE,
   seed.use = 97
 )
 }
 \arguments{
 \item{y}{The y for response variable, which can be continouse or binary.}
+
+\item{Z}{The matched features for internal and external data.}
 
 \item{W}{The mismatched features only in internal data, the default is NULL.}
 
@@ -57,11 +60,23 @@ by cross validation using penalty regression, chosen from c("ridge","lasso"). Th
 E.g., one may input htlgmm result as beta_initial for more rounds to refine the final estimation.
 The default is NULL, and internal data is used for initial estimation.}
 
+\item{use_sparseC}{Whether to use approximate version of weighting matrix C.
+If approximation, use the diagonal of inverse of C(inv_C) to approximate the inv_C. The default is FALSE.
+When internal data sample size is limited, use_sparseC = TRUE is recommended.
+When internal data sample size is large enough, use_sparseC = FALSE is recommended.}
+
+\item{inference}{Whether to do post-selection inference, only work for adaptivelasso. The default is FALSE.}
+
+\item{tune_ratio}{Whether to use two-lambda stratgey. The default is TRUE.}
+
+\item{validation_type}{How to perform validation to find the best lamdba or ratio.
+Select from c("cv","holdout"). The default is "cv".}
+
+\item{nfolds}{The fold number for cross validation. Only work for validation_type = "cv".The default is 10.}
+
 \item{remove_penalty_Z}{Not penalize X if it is TRUE. The default is FALSE.}
 
 \item{remove_penalty_W}{Not penalize W if it is TRUE. The default is FALSE.}
-
-\item{tune_ratio}{Whether to use two-lambda stratgey. The default is TRUE.}
 
 \item{fix_lambda}{Without cross validation, fix the lambda. The default is NULL.}
 
@@ -79,25 +94,11 @@ The default is NULL, and internal data is used for initial estimation.}
 
 \item{gamma_adaptivelasso}{The gamma for adaptive lasso. Select from c(1/2,1,2). The default is 1/2.}
 
-\item{inference}{Whether to do post-selection inference, only work for adaptivelasso. The default is FALSE.}
-
 \item{summary_type}{The summary statistics type, chosen from c("multi","uni"), where the default is "multi".}
-
-\item{validation_type}{How to perform validation to find the best lamdba or ratio.
-Select from c("cv","holdout"). The default is "cv".}
-
-\item{nfolds}{The fold number for cross validation. Only work for validation_type = "cv".The default is 10.}
 
 \item{holdout_p}{The holdout validation data proportion. Only work for validation_type = "holdout". The default is 0.2.}
 
-\item{use_sparseC}{Whether to use approximate version of weighting matrix C.
-If approximation, use the diagonal of inverse of C(inv_C) to approximate the inv_C. The default is FALSE.
-When internal data sample size is limited, use_sparseC = TRUE is recommended.
-When internal data sample size is large enough, use_sparseC = FALSE is recommended.}
-
 \item{seed.use}{The seed for  97.}
-
-\item{X}{The matched features for internal and external data.}
 }
 \value{
 \itemize{
@@ -117,8 +118,9 @@ When internal data sample size is large enough, use_sparseC = FALSE is recommend
 }
 }
 \description{
-cv.htlgmm: cross validtaion for htlgmm (Heterogeneous Transfer Learning via generalized method of moments).
+cv.htlgmm works for cross validation for htlgmm (Heterogeneous Transfer Learning via Generalized Method of Moments).
+Fit a generalized linear model via penalized generalized method of moments. The input requires
 }
 \details{
-Cross validtaion for htlgmm.
+Cross validation for htlgmm.
 }

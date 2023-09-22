@@ -1,4 +1,4 @@
-pacman::p_load(expm,magic,glmnet,cluster,MASS,locfit,corpcor,caret,mvtnorm)
+#pacman::p_load(expm,magic,glmnet,cluster,MASS,locfit,corpcor,caret,mvtnorm)
 pseudo_Xy_multiv_addition<-function(
         C_half,Z,W,y,study_info){
     ZW<-cbind(Z,W)
@@ -163,6 +163,14 @@ holdout_mse_lambda_ratio_func<-function(lambda_list,ratio_range,pZ,pW,
     mse_lam_ratio
 }
 
+#' @import glmnet
+#' @import stats
+#' @importFrom caret createFolds createDataPartition
+#' @importFrom locfit expit
+#' @importFrom corpcor fast.svd
+#' @importFrom magic adiag
+#' @importFrom MASS ginv
+#'
 htlgmm.linear<-function(
         y,Z,W=NULL,
         study_info=NULL,
@@ -224,7 +232,7 @@ htlgmm.linear<-function(
     if(nZ<2*pZ+pW){use_sparseC<-TRUE}
     ZW<-cbind(Z,W)
     Zid<-1:pZ
-    id<-(pZ+1):(pZ+pW)
+    Wid<-(pZ+1):(pZ+pW)
     fix_penalty<-rep(1,pZ+pW)
     if(remove_penalty_Z){fix_penalty[Zid]<-0}
     if(remove_penalty_W){fix_penalty[Wid]<-0}

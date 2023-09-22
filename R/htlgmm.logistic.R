@@ -351,6 +351,14 @@ holdout_dev_lambda_func<-function(lambda_list,pseudo_X_train,pseudo_y_train,
     dev_lam
 }
 
+#' @import glmnet
+#' @import stats
+#' @importFrom caret createFolds createDataPartition
+#' @importFrom locfit expit
+#' @importFrom corpcor fast.svd
+#' @importFrom magic adiag
+#' @importFrom MASS ginv
+#'
 htlgmm.binary<-function(
         y,Z,W=NULL,A=1,
         study_info=NULL,

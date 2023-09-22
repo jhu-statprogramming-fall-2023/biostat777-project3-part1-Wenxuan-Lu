@@ -6,7 +6,7 @@
 \usage{
 htlgmm(
   y,
-  X,
+  Z,
   W = NULL,
   study_info = NULL,
   family = "gaussian",
@@ -26,6 +26,8 @@ htlgmm(
 }
 \arguments{
 \item{y}{The y is the variable of interest.}
+
+\item{Z}{The overlapping features between main study and external study.}
 
 \item{W}{The unmatched features only in main study, the default is NULL.}
 
@@ -65,8 +67,6 @@ The default is NULL, and internal data is used for initial estimation.}
 If approximation, use the diagonal of inverse of C(inv_C) to approximate the inv_C. The default is FALSE.
 When internal data sample size is limited, use_sparseC = TRUE is recommended.
 When internal data sample size is large enough, use_sparseC = FALSE is recommended.}
-
-\item{Z}{The overlapping features between main study and external study.}
 }
 \value{
 beta The target coefficient estimation.
