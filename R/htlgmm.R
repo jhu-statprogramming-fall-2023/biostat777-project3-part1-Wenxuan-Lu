@@ -123,9 +123,9 @@ htlgmm<-function(
 
 
 
-#' cv.htlgmm: cross validtaion for htlgmm (Heterogeneous Transfer Learning via generalized method of moments).
-#'
-#' @details Cross validtaion for htlgmm.
+#' cv.htlgmm works for cross validation for htlgmm (Heterogeneous Transfer Learning via Generalized Method of Moments).
+#' Fit a generalized linear model via penalized generalized method of moments. The input requires
+#' @details Cross validation for htlgmm.
 #'
 #' @param y The y for response variable, which can be continouse or binary.
 #' @param X The matched features for internal and external data.
