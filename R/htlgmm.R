@@ -130,7 +130,8 @@ htlgmm<-function(
 #' @param y The y for response variable, which can be continouse or binary.
 #' @param X The matched features for internal and external data.
 #' @param W The mismatched features only in internal data, the default is NULL.
-#' @param summary_type The summary statistics type, chosen from c("multi","uni"), where the default is "multi".
+#' @param study_info The summary statistics for X only from external data,
+#' which can be summarized in the type of multivariate version or univariate version.
 #' @param family The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".
 #' @param A Usually used in "binomial" family, e.g. the intercept term for logistic regression, where the default is 1.
 #' Usually not used in "gaussian" family.
@@ -153,8 +154,7 @@ htlgmm<-function(
 #' @param ratio_range The ratio range if it is preset. The default is NULL.
 #' @param gamma_adaptivelasso The gamma for adaptive lasso. Select from c(1/2,1,2). The default is 1/2.
 #' @param inference Whether to do post-selection inference, only work for adaptivelasso. The default is FALSE.
-#' @param study_info The summary statistics for X only from external data,
-#' which can be summarized in the type of multivariate version or univariate version.
+#' @param summary_type The summary statistics type, chosen from c("multi","uni"), where the default is "multi".
 #' @param validation_type How to perform validation to find the best lamdba or ratio.
 #' Select from c("cv","holdout"). The default is "cv".
 #' @param nfolds The fold number for cross validation. Only work for validation_type = "cv".The default is 10.
@@ -193,16 +193,20 @@ htlgmm<-function(
 #'
 #'
 cv.htlgmm<-function(
-        y,Z,W=NULL,
+        y,Z,W = NULL,
         study_info=NULL,
         family = "gaussian",
-        A=1,
+        A = 1,
         penalty_type = "lasso",
         initial_with_type = "ridge",
         beta_initial = NULL,
+        use_sparseC = FALSE,
+        inference = FALSE,
+        tune_ratio = FALSE,
+        validation_type = "cv",
+        nfolds = 10,
         remove_penalty_Z = FALSE,
         remove_penalty_W = FALSE,
-        tune_ratio = FALSE,
         fix_lambda = NULL,
         lambda_list = NULL,
         fix_ratio = NULL,
@@ -211,12 +215,8 @@ cv.htlgmm<-function(
         ratio_count = 10,
         ratio_range = NULL,
         gamma_adaptivelasso = 1/2,
-        inference = FALSE,
         summary_type = "multi",
-        validation_type = "cv",
-        nfolds = 10,
         holdout_p = 0.2,
-        use_sparseC = FALSE,
         seed.use = 97
 ){
     if(!family %in% c("gaussian","binomial")){
