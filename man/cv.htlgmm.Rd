@@ -18,6 +18,7 @@ cv.htlgmm(
   inference = FALSE,
   tune_ratio = FALSE,
   validation_type = "cv",
+  type.measure = "default",
   nfolds = 10,
   remove_penalty_Z = FALSE,
   remove_penalty_W = FALSE,
@@ -37,18 +38,17 @@ cv.htlgmm(
 \arguments{
 \item{y}{The y for response variable, which can be continouse or binary.}
 
-\item{Z}{The matched features for internal and external data.}
+\item{Z}{The overlapping features}
 
 \item{W}{The mismatched features only in internal data, the default is NULL.}
 
-\item{study_info}{The summary statistics for X only from external data,
+\item{study_info}{The  only from external data,
 which can be summarized in the type of multivariate version or univariate version.}
 
 \item{family}{The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".}
 
 \item{A}{Usually used in "binomial" family, e.g. the intercept term for logistic regression, where the default is 1.
-Usually not used in "gaussian" family.
-G are the features working for adjustment in reduced model, but G is not summarized in summary statistics(input:study_info).}
+Usually not used in "gaussian" family.}
 
 \item{penalty_type}{The penalty type for htlgmm, chosen from c("lasso","adaptivelasso","ridge"). The default is "lasso".}
 
@@ -70,6 +70,8 @@ When internal data sample size is large enough, use_sparseC = FALSE is recommend
 
 \item{validation_type}{How to perform validation to find the best lamdba or ratio.
 Select from c("cv","holdout"). The default is "cv".}
+
+\item{type.measure}{Select from c("default", "mse", "deviance", "auc"). Default is mse(liner), deviance(logistic). auc is another choice for binary response variable..}
 
 \item{nfolds}{The fold number for cross validation. Only work for validation_type = "cv".The default is 10.}
 
@@ -108,6 +110,7 @@ Select from c("cv","holdout"). The default is "cv".}
  \item{cv_mse:} The mean square error(mse) when family = "gaussian", and validation_type = "cv".
  \item{holdout_dev:} The deviance(dev) when family = "binomial", and validation_type = "holdout".
  \item{cv_dev:} The deviance(dev) when family = "binomial", and validation_type = "cv".
+ \item{cv_auc:} The area under the curve of sensitivity specificity when family = "binomial", and validation_type = "cv".
  \item{lambda_min:} The selected best lambda.
  \item{ratio_min:} The selected best ratio.
  \item{corrected_pos:} For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
