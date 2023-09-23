@@ -195,6 +195,7 @@ htlgmm<-function(
 #' @importFrom corpcor fast.svd
 #' @importFrom magic adiag
 #' @importFrom MASS ginv
+#' @importFrom pROC auc
 #' @export
 #'
 #'

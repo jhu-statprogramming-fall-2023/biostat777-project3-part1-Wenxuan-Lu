@@ -367,6 +367,7 @@ holdout_dev_lambda_func<-function(lambda_list,pseudo_X_train,pseudo_y_train,
 #' @importFrom corpcor fast.svd
 #' @importFrom magic adiag
 #' @importFrom MASS ginv
+#' @importFrom pROC auc
 #'
 htlgmm.binary<-function(
         y,Z,W=NULL,A=1,
@@ -615,8 +616,8 @@ htlgmm.binary<-function(
         return_list<-list("beta"=beta,#[-c((length(beta)-pA+1):length(beta)) ],
                           "lambda_list"=lambda_list,
                           "ratio_list"=ratio_range,
-                          "cv_dev"=cv_dev,
-                          "cv_auc"=cv_auc,
+                          "cv_dev"=cv_dev$deviance,
+                          "cv_auc"=cv_dev$auc,
                           "lambda_min"=final.lambda.min,
                           "ratio_min"=final.ratio.min)
     }

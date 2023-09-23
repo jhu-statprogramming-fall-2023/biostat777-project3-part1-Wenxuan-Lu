@@ -15,7 +15,8 @@ Imports:
     magic,
     caret,
     locfit,
-    corpcor
+    corpcor,
+    pROC
 License: GPL-3
 Encoding: UTF-8
 RoxygenNote: 7.2.1
