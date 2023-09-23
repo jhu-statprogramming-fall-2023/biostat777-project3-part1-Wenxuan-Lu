@@ -240,8 +240,8 @@ cv_dev_lambda_ratio_func<-function(index_fold,Z,W,A,y,
         initial_sf_train<-nrow(Ztrain)/sqrt(nrow(pseudo_Xy_list_train$pseudo_X))
         pseudo_X_train<-pseudo_Xy_list_train$pseudo_X/initial_sf_train
         pseudo_y_train<-pseudo_Xy_list_train$pseudo_y/initial_sf_train
-        dev_lam_ratio_fold<-sapply(lambda_list,function(cur_lam){
-            sapply(ratio_range,function(cur_ratio){
+        dev_lam_ratio_fold<-lapply(ratio_range,function(cur_ratio){
+            sapply(lambda_list,function(cur_lam){
                 ratio_vec<-c(rep(cur_ratio,pZ),rep(1,pW+pA))
                 w_adaptive_ratio<-w_adaptive*ratio_vec
                 cv_fit<-glmnet(x=pseudo_X_train,y=pseudo_y_train,
@@ -251,14 +251,22 @@ cv_dev_lambda_ratio_func<-function(index_fold,Z,W,A,y,
                 cur_beta<-coef.glmnet(cv_fit)[-1]
                 probtest <- c(expit(cbind(Ztest,Wtest,Atest)%*%cur_beta))
                 cur_dev <- -2*sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
-                #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Ztest,Wtest,Atest)%*%cur_beta)),direction = "<")))
-                cur_dev
+                suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Ztest,Wtest,Atest)%*%cur_beta)),direction = "<")))
+                c(cur_dev,cur_auc)
             })
         }) # row is ratio_range & col is lambda_list
-        dev_lam_ratio_fold
-    })
 
-    sum_dev_lam_ratio<-Reduce(`+`, dev_lam_ratio)
+        list("deviance"=do.call(rbind, lapply(dev_lam_ratio_fold, function(m) m[1,])),
+             "auc"=do.call(rbind, lapply(dev_lam_ratio_fold, function(m) m[2,])))
+    })
+    dev_lam_ratio1<-lapply(1:length(index_fold), function(cur_fold){
+        dev_lam_ratio[[cur_fold]]$deviance
+    })
+    dev_lam_ratio2<-lapply(1:length(index_fold), function(cur_fold){
+        dev_lam_ratio[[cur_fold]]$auc
+    })
+    list("deviance"=Reduce(`+`, dev_lam_ratio1),
+         "auc"=Reduce(`+`, dev_lam_ratio2))
 }
 
 
@@ -269,7 +277,7 @@ cv_dev_lambda_func<-function(index_fold,Z,W,A,y,
                              study_info,lambda_list,
                              w_adaptive,final_alpha,
                              pseudo_Xy){
-    dev_fold<-sapply(1:length(index_fold), function(cur_fold){
+    dev_fold<-lapply(1:length(index_fold), function(cur_fold){
         index_test<-index_fold[[cur_fold]]
         Ztrain<-Z[-index_test,]
         Ztest<-Z[index_test,]
@@ -300,13 +308,14 @@ cv_dev_lambda_func<-function(index_fold,Z,W,A,y,
             cur_beta<-coef.glmnet(cv_fit)[-1]
             probtest <- c(expit(cbind(Ztest,Wtest,Atest)%*%cur_beta))
             cur_dev <- -2*sum( ytest * log(probtest) + (1 - ytest) * log(1 - probtest) )
-            #suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Ztest,Wtest,Atest)%*%cur_beta)),direction = "<")))
+            suppressMessages(cur_auc<-c(auc(ytest,c(expit(cbind(Ztest,Wtest,Atest)%*%cur_beta)),direction = "<")))
             #sum((cbind(Ztest,Wtest,Atest)%*%cur_beta - ytest)^2)
-            cur_dev
+            c(cur_dev,cur_auc)
         })
         dev_lam
     })
-    rowMeans(dev_fold)
+    sum_dev_lam<-Reduce(`+`, dev_fold)
+    list("deviance"=sum_dev_lam[1,],"auc"=sum_dev_lam[2,])
 }
 
 ## cross validation helper function 3
@@ -379,6 +388,7 @@ htlgmm.binary<-function(
         gamma_adaptivelasso = 1/2,
         inference = FALSE,
         validation_type = "cv",
+        type.measure = c("default", "mse", "deviance", "auc"),
         nfolds = 10,
         holdout_p = 0.2,
         use_sparseC = FALSE,
@@ -393,6 +403,9 @@ htlgmm.binary<-function(
     }
     if(!penalty_type %in% c("adaptivelasso","lasso","ridge")){
         stop("Select penalty type from c('adaptivelasso','lasso','ridge').")
+    }
+    if(!type.measure%in% c("default", "mse", "deviance", "auc")){
+        stop("Select type.measure from c('default','deviance','auc')")
     }
     final_alpha = 1
     if(penalty_type == "ridge"){final_alpha = 0}
@@ -568,7 +581,13 @@ htlgmm.binary<-function(
                                              study_info,lambda_list,
                                              ratio_range,pZ,pW,pA,
                                              w_adaptive,final_alpha,pseudo_Xy)
-            ids<-which(cv_dev==min(cv_dev),arr.ind = TRUE)
+            if(type.measure == "auc"){
+                cv_dev1<-cv_dev$auc
+                ids<-which(cv_dev1==max(cv_dev1),arr.ind = TRUE)
+            }else{
+                cv_dev1<-cv_dev$deviance
+                ids<-which(cv_dev1==min(cv_dev1),arr.ind = TRUE)
+            }
             final.ratio.min<-ratio_range[ids[1]]
             final.lambda.min<-lambda_list[ids[2]]
         }else{
@@ -576,7 +595,13 @@ htlgmm.binary<-function(
                                        C_half,beta_initial,hat_thetaA,
                                        study_info,lambda_list,
                                        w_adaptive,final_alpha,pseudo_Xy)
-            final.lambda.min<-lambda_list[which.min(cv_dev)]
+            if(type.measure == "auc"){
+                cv_dev1<-cv_dev$auc
+                final.lambda.min<-lambda_list[which.max(cv_dev1)]
+            }else{
+                cv_dev1<-cv_dev$deviance
+                final.lambda.min<-lambda_list[which.min(cv_dev1)]
+            }
             final.ratio.min<-1
         }
         ratio_vec<-c(rep(final.ratio.min,pZ),rep(1,pW+pA))
@@ -591,6 +616,7 @@ htlgmm.binary<-function(
                           "lambda_list"=lambda_list,
                           "ratio_list"=ratio_range,
                           "cv_dev"=cv_dev,
+                          "cv_auc"=cv_auc,
                           "lambda_min"=final.lambda.min,
                           "ratio_min"=final.ratio.min)
     }
@@ -617,12 +643,14 @@ htlgmm.binary<-function(
 
         pval_final<-pchisq(nZ*beta[index_nonzero]^2/final_v,1,lower.tail = F)
         pval_final1<-p.adjust(pval_final,method = "BH")
-        corrected_pos<-index_nonzero[which(pval_final1<0.05)]
+        selected_pos<-index_nonzero[which(pval_final1<0.05)]
         return_list<-c(return_list,
-                       list("corrected_pos"=corrected_pos,
-                            "nonzero_pos"=index_nonzero,
-                            "pval"=pval_final,
-                            "nonzero_var"=final_v))
+                       list("selected_vars"=
+                                list("position"=index_nonzero,
+                                     "coef"=beta[index_nonzero],
+                                     "pval"=pval_final,
+                                     "variance"=final_v)
+                       ))
     }
     return(return_list)
 }

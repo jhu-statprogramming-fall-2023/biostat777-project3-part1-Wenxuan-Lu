@@ -419,7 +419,6 @@ htlgmm.linear<-function(
         inv_C_svd<-fast.svd(inv_C+diag(1e-15,nrow(inv_C)))
         C_half<-inv_C_svd$v%*%diag(1/sqrt(inv_C_svd$d))%*%t(inv_C_svd$u)
 
-
         Sigsum_half<-cbind(ZWtZW/nZ,crossprod(ZW,Z)/nZ)%*%C_half
         Sigsum_scaled<-Sigsum_half%*%t(Sigsum_half)
         Sigsum_scaled_nonzero<-Sigsum_scaled[index_nonzero,index_nonzero]
@@ -428,12 +427,14 @@ htlgmm.linear<-function(
 
         pval_final<-pchisq(nZ*beta[index_nonzero]^2/final_v,1,lower.tail = F)
         pval_final1<-p.adjust(pval_final,method = "BH")
-        corrected_pos<-index_nonzero[which(pval_final1<0.05)]
+        selected_pos<-index_nonzero[which(pval_final1<0.05)]
         return_list<-c(return_list,
-                       list("corrected_pos"=corrected_pos,
-                            "nonzero_pos"=index_nonzero,
-                            "pval"=pval_final,
-                            "nonzero_var"=final_v))
+                       list("selected_vars"=
+                                list("position"=index_nonzero,
+                                     "coef"=beta[index_nonzero],
+                                     "pval"=pval_final,
+                                     "variance"=final_v)
+                       ))
     }
     return(return_list)
 }
