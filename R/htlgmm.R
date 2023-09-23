@@ -134,14 +134,13 @@ htlgmm<-function(
 #' @details Cross validation for htlgmm.
 #'
 #' @param y The y for response variable, which can be continouse or binary.
-#' @param Z The matched features for internal and external data.
+#' @param Z The overlapping features
 #' @param W The mismatched features only in internal data, the default is NULL.
-#' @param study_info The summary statistics for X only from external data,
+#' @param study_info The  only from external data,
 #' which can be summarized in the type of multivariate version or univariate version.
 #' @param family The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".
 #' @param A Usually used in "binomial" family, e.g. the intercept term for logistic regression, where the default is 1.
 #' Usually not used in "gaussian" family.
-#' G are the features working for adjustment in reduced model, but G is not summarized in summary statistics(input:study_info).
 #' @param penalty_type The penalty type for htlgmm, chosen from c("lasso","adaptivelasso","ridge"). The default is "lasso".
 #' @param initial_with_type Get initial estimation for beta using internal data only
 #'  by cross validation using penalty regression, chosen from c("ridge","lasso"). The default is "ridge".
@@ -163,6 +162,7 @@ htlgmm<-function(
 #' @param summary_type The summary statistics type, chosen from c("multi","uni"), where the default is "multi".
 #' @param validation_type How to perform validation to find the best lamdba or ratio.
 #' Select from c("cv","holdout"). The default is "cv".
+#' @param type.measure Select from c("default", "mse", "deviance", "auc"). Default is mse(liner), deviance(logistic). auc is another choice for binary response variable..
 #' @param nfolds The fold number for cross validation. Only work for validation_type = "cv".The default is 10.
 #' @param holdout_p The holdout validation data proportion. Only work for validation_type = "holdout". The default is 0.2.
 #' @param use_sparseC Whether to use approximate version of weighting matrix C.
@@ -179,6 +179,7 @@ htlgmm<-function(
 #'  \item{cv_mse:} The mean square error(mse) when family = "gaussian", and validation_type = "cv".
 #'  \item{holdout_dev:} The deviance(dev) when family = "binomial", and validation_type = "holdout".
 #'  \item{cv_dev:} The deviance(dev) when family = "binomial", and validation_type = "cv".
+#'  \item{cv_auc:} The area under the curve of sensitivity specificity when family = "binomial", and validation_type = "cv".
 #'  \item{lambda_min:} The selected best lambda.
 #'  \item{ratio_min:} The selected best ratio.
 #'  \item{corrected_pos:} For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
@@ -211,6 +212,7 @@ cv.htlgmm<-function(
         inference = FALSE,
         tune_ratio = FALSE,
         validation_type = "cv",
+        type.measure = "default",
         nfolds = 10,
         remove_penalty_Z = FALSE,
         remove_penalty_W = FALSE,
@@ -246,7 +248,7 @@ cv.htlgmm<-function(
                            tune_ratio,fix_lambda,lambda_list,
                            fix_ratio,ratio_lower,ratio_upper,
                            ratio_count,ratio_range,gamma_adaptivelasso,
-                           inference,validation_type,nfolds,holdout_p,
+                           inference,validation_type,type.measure,nfolds,holdout_p,
                            use_sparseC,seed.use)
     }
     return(res)

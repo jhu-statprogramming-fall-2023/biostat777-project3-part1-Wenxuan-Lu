@@ -616,8 +616,8 @@ htlgmm.binary<-function(
         return_list<-list("beta"=beta,#[-c((length(beta)-pA+1):length(beta)) ],
                           "lambda_list"=lambda_list,
                           "ratio_list"=ratio_range,
-                          "cv_dev"=cv_dev$deviance,
-                          "cv_auc"=cv_dev$auc,
+                          "cv_dev"=cv_dev$deviance/nfolds,
+                          "cv_auc"=cv_dev$auc/nfolds,
                           "lambda_min"=final.lambda.min,
                           "ratio_min"=final.ratio.min)
     }

@@ -381,7 +381,7 @@ htlgmm.linear<-function(
             cv_mse<-cv_mse_lambda_ratio_func(index_fold,Z,W,y,C_half,
                                              study_info,lambda_list,
                                              ratio_range,pZ,pW,w_adaptive,
-                                             final_alpha,pseudo_Xy)
+                                             final_alpha,pseudo_Xy)/nfolds
             ids<-which(cv_mse==min(cv_mse),arr.ind = TRUE)
             final.ratio.min<-ratio_range[ids[1]]
             final.lambda.min<-lambda_list[ids[2]]
