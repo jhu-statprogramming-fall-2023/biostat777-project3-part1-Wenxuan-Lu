@@ -2,6 +2,8 @@
 
 
 
+Please see the google colab link [https://colab.research.google.com/drive/1TWE3ZT30fY1umL_ILoeC2iwS8oTn66aT?usp=sharing] for tutorial. 
+
 This works for README file for `htlgmm` function. 
 
 $p_{\mathrm{Z}}=20,p_{\mathrm{W}}=3$
