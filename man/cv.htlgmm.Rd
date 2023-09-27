@@ -113,7 +113,7 @@ Select from c("cv","holdout"). The default is "cv".}
  \item{cv_auc:} The area under the curve of sensitivity specificity when family = "binomial", and validation_type = "cv".
  \item{lambda_min:} The selected best lambda.
  \item{ratio_min:} The selected best ratio.
- \item{corrected_pos:} For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
+ \item{selected_vars:} For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
  \item{nonzero_pos:} For estimated beta, the nonzero positions.
  \item{pval:} For nonzero_pos, the calculated p values.
  \item{nonzero_var:} For nonzero_pos, the calculated variances.

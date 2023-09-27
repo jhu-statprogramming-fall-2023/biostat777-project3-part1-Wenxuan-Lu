@@ -2,7 +2,7 @@
 % Please edit documentation in R/htlgmm.R
 \name{htlgmm}
 \alias{htlgmm}
-\title{htlgmm}
+\title{htlgmm:}
 \usage{
 htlgmm(
   y,
@@ -94,7 +94,9 @@ nonzero_var For nonzero_pos, the calculated variances.
 }
 }
 \description{
-htlgmm
+htlgmm fits a generalized linear model via penalized generalized method of moments,
+i.e. Heterogeneous Transfer Learning via Generalized Method of Moments.
+The input requires main study and external study.
 }
 \details{
 htlgmm: Heterogeneous Transfer Learning via generalized method of moments(GMM).
