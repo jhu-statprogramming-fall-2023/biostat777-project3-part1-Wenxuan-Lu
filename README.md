@@ -4,7 +4,7 @@
 
 This works for README file for `htlgmm` function. 
 
-### $p_{\bf Z}=20,p_{\bf W}=3$
+$p_{\bf Z}=20,p_{\bf W}=3$
 
 ```R
 # Simulation Example
