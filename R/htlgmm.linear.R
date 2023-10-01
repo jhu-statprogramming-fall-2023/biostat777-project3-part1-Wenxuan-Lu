@@ -433,7 +433,8 @@ htlgmm.linear<-function(
                                 list("position"=index_nonzero,
                                      "coef"=beta[index_nonzero],
                                      "pval"=pval_final,
-                                     "variance"=final_v)
+                                     "variance"=final_v,
+                                     "FDR_adjust_position"=selected_pos)
                        ))
     }
     return(return_list)

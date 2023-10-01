@@ -389,7 +389,7 @@ htlgmm.binary<-function(
         gamma_adaptivelasso = 1/2,
         inference = FALSE,
         validation_type = "cv",
-        type.measure = c("default", "mse", "deviance", "auc"),
+        type.measure = "default",
         nfolds = 10,
         holdout_p = 0.2,
         use_sparseC = FALSE,
