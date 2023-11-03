@@ -8,13 +8,14 @@ cv.htlgmm(
   y,
   Z,
   W = NULL,
-  A = "default",
   study_info = NULL,
+  A = "default",
   penalty_type = "lasso",
   family = "gaussian",
   initial_with_type = "ridge",
   beta_initial = NULL,
   hat_thetaA = NULL,
+  V_thetaA = NULL,
   remove_penalty_Z = FALSE,
   remove_penalty_W = FALSE,
   inference = TRUE,
@@ -38,14 +39,14 @@ cv.htlgmm(
 
 \item{W}{The unmatched features only in main study, the default is NULL.}
 
+\item{study_info}{The trained model from external study, including estimate coefficients, estimated variance-covariance matrix and sample size.
+The 'study_info' is in the format of list. The first item is 'Coeff', the second iterm is 'Covariance', and the third item is 'Sample_size'.}
+
 \item{A}{The covariates for study-specific adjustment. The default is 'default', which is 'NULL' for 'gaussian' family, '1' for 'binomial' family.
 For continuous variable, we suggest scaling the features Z, W to eliminate intercept term.  If 'A = NULL', there is no intercept term included.
 For binary variable, we use intercept term by 'A=1' to adjust for different binary trait ratios in main and external studies.
 If there is only intercept term in A, we use 'A=1'.
 A are the features working for adjustment in reduced model, but A is not summarized in summary statistics(input:study_info).}
-
-\item{study_info}{The trained model from external study, including estimate coefficients, estimated variance-covariance matrix and sample size.
-The 'study_info' is in the format of list. The first item is 'Coeff', the second iterm is 'Covariance', and the third item is 'Sample_size'.}
 
 \item{penalty_type}{The penalty type for htlgmm, chosen from c("ols","lasso","adaptivelasso","ridge"). The default is "lasso".
 If 'penalty_type = 'ols' ', we use without penalty. (For continous y, we use OLS, and for binary y, we use logistic regression without penalty.)}
@@ -54,13 +55,15 @@ If 'penalty_type = 'ols' ', we use without penalty. (For continous y, we use OLS
 
 \item{initial_with_type}{Get initial estimation for beta using main study data only
 by cross validation using penalty regression, chosen from c("ridge","lasso") or by OLS, chosen from c("ols"). The default is "ridge". If penalty_type = 'ols', the default is 'ols'.
-(For continous y, we use OLS, and for binary y, we use logistic regression without penalty.)}
+(For continuous y, we use OLS, and for binary y, we use logistic regression without penalty.)}
 
 \item{beta_initial}{The initial estimation for beta if a consistent estimator is available.
 E.g., one may input htlgmm result as beta_initial for more rounds to refine the final estimation.
 The default is NULL, and main study is used for initial estimation according to 'initial_with_type'.}
 
 \item{hat_thetaA}{If A is not NULL, one can provide hat_thetaA as the input. If 'hat_thetaA = NULL', we estimate hat_thetaA with OLS by main study.}
+
+\item{V_thetaA}{If A is not NULL, one can provide V_thetaA as the input. If 'V_thetaA = NULL', we estimate V_thetaA with OLS by main study.}
 
 \item{remove_penalty_Z}{Not penalize Z if it is TRUE. The default is FALSE.}
 
