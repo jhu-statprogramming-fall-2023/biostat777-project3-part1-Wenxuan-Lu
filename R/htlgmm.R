@@ -7,49 +7,54 @@
 #'
 #' @details htlgmm: Heterogeneous Transfer Learning via generalized method of moments(GMM).
 #'
-#' @param y The y is the variable of interest.
-#' @param Z The overlapping features between main study and external study.
+#' @param y The variable of interest, which can be continouse or binary.
+#' @param Z The overlapping features in both main and external studies.
 #' @param W The unmatched features only in main study, the default is NULL.
-#' @param study_info The summary statistics for Z only from external study,
-#' which can be summarized in the type of multivariate version or univariate version.
+#' @param A The covariates for study-specific adjustment. The default is 'default', which is 'NULL' for 'gaussian' family, '1' for 'binomial' family.
+#' For continuous variable, we suggest scaling the features Z, W to eliminate intercept term.  If 'A = NULL', there is no intercept term included.
+#' For binary variable, we use intercept term by 'A=1' to adjust for different binary trait ratios in main and external studies.
+#' If there is only intercept term in A, we use 'A=1'.
+#' A are the features working for adjustment in reduced model, but A is not summarized in summary statistics(input:study_info).
+#' @param study_info The trained model from external study, including estimate coefficients, estimated variance-covariance matrix and sample size.
+#' The 'study_info' is in the format of list. The first item is 'Coeff', the second iterm is 'Covariance', and the third item is 'Sample_size'.
+#' @param penalty_type The penalty type for htlgmm, chosen from c("ols","lasso","adaptivelasso","ridge"). The default is "lasso".
+#' If 'penalty_type = 'ols' ', we use without penalty. (For continous y, we use OLS, and for binary y, we use logistic regression without penalty.)
 #' @param family The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".
-#' @param A Study specific adjustment factors, in particular, intercept term in logistic regression. The default is intercept term for
-#'
-#' G are the features working for adjustment in reduced model, but G is not summarized in summary statistics(input:study_info).
-#' @param penalty_type The penalty type for htlgmm, chosen from c("lasso","adaptivelasso","ridge"). The default is "lasso".
-#' @param initial_with_type Get initial estimation for beta using internal data only
-#'  by cross validation using penalty regression, chosen from c("ridge","lasso"). The default is "ridge".
+#' @param initial_with_type Get initial estimation for beta using main study data only
+#' by cross validation using penalty regression, chosen from c("ridge","lasso") or by OLS, chosen from c("ols"). The default is "ridge". If penalty_type = 'ols', the default is 'ols'.
+#' (For continous y, we use OLS, and for binary y, we use logistic regression without penalty.)
 #' @param beta_initial The initial estimation for beta if a consistent estimator is available.
 #' E.g., one may input htlgmm result as beta_initial for more rounds to refine the final estimation.
-#' The default is NULL, and internal data is used for initial estimation.
-#' @param remove_penalty_Z Not penalize overlapping features Z if it is TRUE. The default is FALSE.
-#' @param remove_penalty_W Not penalize unmatched features W if it is TRUE. The default is FALSE.
-#' @param lambda Without cross validation, fix the lambda. The default is NULL.
-#' @param ratio The fixed ratio of X for two-lambda strategy. The default is NULL.
+#' The default is NULL, and main study is used for initial estimation according to 'initial_with_type'.
+#' @param hat_thetaA If A is not NULL, one can provide hat_thetaA as the input. If 'hat_thetaA = NULL', we estimate hat_thetaA with OLS by main study.
+#' @param remove_penalty_Z Not penalize Z if it is TRUE. The default is FALSE.
+#' @param remove_penalty_W Not penalize W if it is TRUE. The default is FALSE.
+#' @param inference Whether to do inference without penalty or post-selection inference with adaptive lasso penalty. The default is TRUE.
+#' @param fix_lambda Without cross validation, fix the lambda. The default is NULL.
+#' @param lambda_list Customize the input lambda list for validation. The default is NULL to generate lambda list according to glmnet.
+#' @param fix_ratio The fixed ratio for two-lambda strategy. The ratio is multiplied for Z features. The default is NULL. If it is NULL, select the best ratio via cross validation or holdout validation.
 #' @param gamma_adaptivelasso The gamma for adaptive lasso. Select from c(1/2,1,2). The default is 1/2.
-#' @param summary_type The summary statistics type, chosen from c("multi","uni"), where the default is "multi".
-#' @param inference Whether to do post-selection inference, only work for adaptivelasso. The default is FALSE.
 #' @param use_sparseC Whether to use approximate version of weighting matrix C.
-#' If approximation, use the diagonal of inverse of C(inv_C) to approximate the inv_C. The default is FALSE.
-#' When internal data sample size is limited, use_sparseC = TRUE is recommended.
-#' When internal data sample size is large enough, use_sparseC = FALSE is recommended.
+#' If approximation, use the diagonal of inverse of C(inv_C) to approximate the inv_C. The default is TRUE.
+#' When main study sample size is limited, use_sparseC = TRUE is recommended.
+#' When main study sample size is large enough, use_sparseC = FALSE is recommended.
+#' @param seed.use The seed for  97.
 #'
-#' @return beta The target coefficient estimation.
-#' @return fix_lambda The output lambda.
-#' @return fix_ratio The output ratio.
-#' @return corrected_pos For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
-#' @return nonzero_pos For estimated beta, the nonzero positions.
-#' @return pval For nonzero_pos, the calculated p values.
-#' @return nonzero_var For nonzero_pos, the calculated variances.
 #' @return \itemize{
-#'  \item{beta:} The target coefficient estimation.
-#'  \item{fix_lambda:} The output lambda.
-#'  \item{fix_ratio:} The output ratio.
-#'  \item{corrected_pos:} For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
-#'  \item{nonzero_pos:} For estimated beta, the nonzero positions.
-#'  \item{pval:} For nonzero_pos, the calculated p values.
-#'  \item{nonzero_var:} For nonzero_pos, the calculated variances.
-#' }
+#'  \item{beta:} The target coefficient estimation, the features will go in the order of (A,Z,W).
+#'  \item{lambda_list:} The lambda list for cross validation.
+#'  \item{ratio_list:} The ratio list for validation (cross validation or holdout validation).
+#'  \item{fix_lambda:} If the fix_lambda is not null, we output fix_lambda.
+#'  \item{fix_ratio:} If the fix_ratio is not null, we output fix_ratio.
+#'  \item{selected_vars:} For inference or post-selection inference, we output the inference results by a list. \itemize{
+#'  \item{position:} The index of nonzero positions, the index comes from X = (A,Z,W).
+#'  \item{name:} The feature name of nonzero positions. If there is no default name, we name it after Ai, Zi, Wi.
+#'  \item{coef:} The coefficients of nonzero positions.
+#'  \item{variance:} The variances for features with OLS inference, for selected features with post-selection inference.
+#'  \item{pval:} For p values for nonzero positions.
+#'  \item{FDR_adjust_position:} The FDR adjusted positions passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
+#'  }
+#'  }
 #'
 #' @import glmnet
 #' @import stats
@@ -63,66 +68,42 @@
 #'
 
 htlgmm<-function(
-        y,Z,W=NULL,
+        y,Z,W=NULL,A="default",
         study_info=NULL,
-        family = "gaussian",
-        A=1,
         penalty_type = "lasso",
+        family = "gaussian",
         initial_with_type = "ridge",
         beta_initial = NULL,
+        hat_thetaA = NULL,
         remove_penalty_Z = FALSE,
         remove_penalty_W = FALSE,
-        #tune_ratio = TRUE,
-        lambda = 0,
-        #lambda_list = NULL,
-        ratio = NULL,
-        #ratio_lower = NULL,
-        #ratio_upper = NULL,
-        #ratio_count = 10,
-        #ratio_range = NULL,
+        inference = TRUE,
+        fix_lambda = NULL,
+        lambda_list = NULL,
+        fix_ratio = NULL,
         gamma_adaptivelasso = 1/2,
-        summary_type = "multi",
-        inference = FALSE,
-        #validation_type = "cv",
-        #nfolds = 10,
-        #holdout_p = 0.2,
-        use_sparseC = FALSE
+        use_sparseC = TRUE,
+        seed.use = 97
 ){
-    tune_ratio = FALSE
-    lambda_list = NULL
-    ratio_lower = NULL
-    ratio_upper = NULL
-    ratio_count = 10
-    ratio_range = NULL
-    validation_type = "None"
-    nfolds = 10
-    holdout_p = 0.2
-    fix_lambda = lambda
-    fix_ratio = ratio
-    seed.use = 97
+
     if(!family %in% c("gaussian","binomial")){
         stop("Select family from c('gaussian','binomial')")
     }
-    if(family == "gaussian"){
-        #warning("For gaussian family, no A is used. \n Just assume A is cancelled for full and reduced model.")
-        res<-htlgmm.linear(y,Z,W,study_info,summary_type,penalty_type,
-                           initial_with_type,beta_initial,
-                           remove_penalty_Z,remove_penalty_W,
-                           tune_ratio,fix_lambda,lambda_list,
-                           fix_ratio,ratio_lower,ratio_upper,
-                           ratio_count,ratio_range,gamma_adaptivelasso,
-                           inference,validation_type,
-                           nfolds,holdout_p,use_sparseC,seed.use)
-    }else{
-        res<-htlgmm.binary(y,Z,W,A,study_info,summary_type,penalty_type,
-                           initial_with_type,beta_initial,
-                           remove_penalty_Z,remove_penalty_W,
-                           tune_ratio,fix_lambda,lambda_list,
-                           fix_ratio,ratio_lower,ratio_upper,
-                           ratio_count,ratio_range,gamma_adaptivelasso,
-                           inference,validation_type,nfolds,holdout_p,
-                           use_sparseC,seed.use)
-    }
+
+    if(A=='default'){if(family == "gaussian"){A=NULL}else{A=1}}
+    use_cv = FALSE
+    nfolds = 10
+    tune_ratio = FALSE
+    ratio_list = NULL
+    type_measure = "default"
+    res<-htlgmm.default(y,Z,W,A,study_info,penalty_type,
+                        family,initial_with_type,beta_initial,
+                        hat_thetaA,remove_penalty_Z,
+                        remove_penalty_W,inference,use_cv,
+                        type_measure,nfolds,fix_lambda,
+                        lambda_list,tune_ratio,fix_ratio,
+                        ratio_list,gamma_adaptivelasso,
+                        use_sparseC,seed.use)
     return(res)
 }
 
@@ -138,60 +119,65 @@ htlgmm<-function(
 #'
 #' @details Cross validation for htlgmm.
 #'
-#' @param y The y for response variable, which can be continouse or binary.
-#' @param Z The overlapping features
-#' @param W The mismatched features only in internal data, the default is NULL.
-#' @param study_info The  only from external data,
-#' which can be summarized in the type of multivariate version or univariate version.
+#' @param y The variable of interest, which can be continouse or binary.
+#' @param Z The overlapping features in both main and external studies.
+#' @param W The unmatched features only in main study, the default is NULL.
+#' @param A The covariates for study-specific adjustment. The default is 'default', which is 'NULL' for 'gaussian' family, '1' for 'binomial' family.
+#' For continuous variable, we suggest scaling the features Z, W to eliminate intercept term.  If 'A = NULL', there is no intercept term included.
+#' For binary variable, we use intercept term by 'A=1' to adjust for different binary trait ratios in main and external studies.
+#' If there is only intercept term in A, we use 'A=1'.
+#' A are the features working for adjustment in reduced model, but A is not summarized in summary statistics(input:study_info).
+#' @param study_info The trained model from external study, including estimate coefficients, estimated variance-covariance matrix and sample size.
+#' The 'study_info' is in the format of list. The first item is 'Coeff', the second iterm is 'Covariance', and the third item is 'Sample_size'.
+#' @param penalty_type The penalty type for htlgmm, chosen from c("ols","lasso","adaptivelasso","ridge"). The default is "lasso".
+#' If 'penalty_type = 'ols' ', we use without penalty. (For continous y, we use OLS, and for binary y, we use logistic regression without penalty.)
 #' @param family The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".
-#' @param A Usually used in "binomial" family, e.g. the intercept term for logistic regression, where the default is 1.
-#' Usually not used in "gaussian" family.
-#' @param penalty_type The penalty type for htlgmm, chosen from c("lasso","adaptivelasso","ridge"). The default is "lasso".
-#' @param initial_with_type Get initial estimation for beta using internal data only
-#'  by cross validation using penalty regression, chosen from c("ridge","lasso"). The default is "ridge".
+#' @param initial_with_type Get initial estimation for beta using main study data only
+#' by cross validation using penalty regression, chosen from c("ridge","lasso") or by OLS, chosen from c("ols"). The default is "ridge". If penalty_type = 'ols', the default is 'ols'.
+#' (For continous y, we use OLS, and for binary y, we use logistic regression without penalty.)
 #' @param beta_initial The initial estimation for beta if a consistent estimator is available.
 #' E.g., one may input htlgmm result as beta_initial for more rounds to refine the final estimation.
-#' The default is NULL, and internal data is used for initial estimation.
-#' @param remove_penalty_Z Not penalize X if it is TRUE. The default is FALSE.
+#' The default is NULL, and main study is used for initial estimation according to 'initial_with_type'.
+#' @param hat_thetaA If A is not NULL, one can provide hat_thetaA as the input. If 'hat_thetaA = NULL', we estimate hat_thetaA with OLS by main study.
+#' @param remove_penalty_Z Not penalize Z if it is TRUE. The default is FALSE.
 #' @param remove_penalty_W Not penalize W if it is TRUE. The default is FALSE.
-#' @param tune_ratio Whether to use two-lambda stratgey. The default is TRUE.
+#' @param inference Whether to do inference without penalty or post-selection inference with adaptive lasso penalty. The default is TRUE.
+#' @param use_cv Whether to use cross validation to determine the best lambda (or ratio).
+#' @param type_measure Select from c("default", "mse", "deviance", "auc"). Default is mse(liner), deviance(logistic). 'auc' is another choice for binary y.
+#' @param nfolds The fold number for cross validation. Only work for use_cv = TRUE.The default is 10.
 #' @param fix_lambda Without cross validation, fix the lambda. The default is NULL.
-#' @param lambda_list Customize the input lambda list for validation. The default is NULL.
-#' @param fix_ratio The fixed ratio of X for two-lambda strategy. The default is NULL. If it is NULL, select the best ratio via cross validation or holdout validation.
-#' @param ratio_lower The lower bound for ratio range. The default is NULL.
-#' @param ratio_upper The upper bound for ratio range. The default is NULL.
-#' @param ratio_count The lengte of ratio list. The default is 10.
-#' @param ratio_range The ratio range if it is preset. The default is NULL.
+#' @param lambda_list Customize the input lambda list for validation. The default is NULL to generate lambda list according to glmnet.
+#' @param tune_ratio Whether to use two-lambda stratgey. The default is TRUE.
+#' @param fix_ratio The fixed ratio for two-lambda strategy. The ratio is multiplied for Z features. The default is NULL. If it is NULL, select the best ratio via cross validation or holdout validation.
+#' @param ratio_list The ratio list if it is preset. The default is NULL and ratio list will be generated.
 #' @param gamma_adaptivelasso The gamma for adaptive lasso. Select from c(1/2,1,2). The default is 1/2.
-#' @param inference Whether to do post-selection inference, only work for adaptivelasso. The default is FALSE.
-#' @param summary_type The summary statistics type, chosen from c("multi","uni"), where the default is "multi".
-#' @param validation_type How to perform validation to find the best lamdba or ratio.
-#' Select from c("cv","holdout"). The default is "cv".
-#' @param type.measure Select from c("default", "mse", "deviance", "auc"). Default is mse(liner), deviance(logistic). auc is another choice for binary response variable..
-#' @param nfolds The fold number for cross validation. Only work for validation_type = "cv".The default is 10.
-#' @param holdout_p The holdout validation data proportion. Only work for validation_type = "holdout". The default is 0.2.
 #' @param use_sparseC Whether to use approximate version of weighting matrix C.
-#' If approximation, use the diagonal of inverse of C(inv_C) to approximate the inv_C. The default is FALSE.
-#' When internal data sample size is limited, use_sparseC = TRUE is recommended.
-#' When internal data sample size is large enough, use_sparseC = FALSE is recommended.
+#' If approximation, use the diagonal of inverse of C(inv_C) to approximate the inv_C. The default is TRUE.
+#' When main study sample size is limited, use_sparseC = TRUE is recommended.
+#' When main study sample size is large enough, use_sparseC = FALSE is recommended.
 #' @param seed.use The seed for  97.
 #'
 #' @return \itemize{
-#'  \item{beta:} The target coefficient estimation.
-#'  \item{lambda_list:} The lambda list for validation (cross validation or holdout validation).
+#'  \item{beta:} The target coefficient estimation, the features will go in the order of (A,Z,W).
+#'  \item{lambda_list:} The lambda list for cross validation.
 #'  \item{ratio_list:} The ratio list for validation (cross validation or holdout validation).
-#'  \item{holdout_mse:} The mean square error(mse) when family = "gaussian", and validation_type = "holdout".
-#'  \item{cv_mse:} The mean square error(mse) when family = "gaussian", and validation_type = "cv".
-#'  \item{holdout_dev:} The deviance(dev) when family = "binomial", and validation_type = "holdout".
-#'  \item{cv_dev:} The deviance(dev) when family = "binomial", and validation_type = "cv".
-#'  \item{cv_auc:} The area under the curve of sensitivity specificity when family = "binomial", and validation_type = "cv".
-#'  \item{lambda_min:} The selected best lambda.
-#'  \item{ratio_min:} The selected best ratio.
-#'  \item{selected_vars:} For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
-#'  \item{nonzero_pos:} For estimated beta, the nonzero positions.
-#'  \item{pval:} For nonzero_pos, the calculated p values.
-#'  \item{nonzero_var:} For nonzero_pos, the calculated variances.
-#' }
+#'  \item{fix_lambda:} If the fix_lambda is not null, we output fix_lambda.
+#'  \item{fix_ratio:} If the fix_ratio is not null, we output fix_ratio.
+#'  \item{lambda_min:} The selected best lambda by cross validation.
+#'  \item{ratio_min:} The selected best ratio by cross validation.
+#'  \item{cv_mse:} The mean square error(mse) when family = "gaussian", and use_cv = TRUE.
+#'  \item{cv_dev:} The deviance(dev) when family = "binomial", and use_cv = TRUE.
+#'  \item{cv_auc:} The area under the curve of sensitivity specificity when family = "binomial", and use_cv = TRUE.
+#'  \item{selected_vars:} For inference or post-selection inference, we output the inference results by a list. \itemize{
+#'  \item{position:} The index of nonzero positions, the index comes from X = (A,Z,W).
+#'  \item{name:} The feature name of nonzero positions. If there is no default name, we name it after Ai, Zi, Wi.
+#'  \item{coef:} The coefficients of nonzero positions.
+#'  \item{variance:} The variances for features with OLS inference, for selected features with post-selection inference.
+#'  \item{pval:} For p values for nonzero positions.
+#'  \item{FDR_adjust_position:} The FDR adjusted positions passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
+#'  }
+#'  }
+#'
 #'
 #'
 #' @import glmnet
@@ -206,56 +192,42 @@ htlgmm<-function(
 #'
 #'
 cv.htlgmm<-function(
-        y,Z,W = NULL,
+        y,Z,W=NULL,A="default",
         study_info=NULL,
-        family = "gaussian",
-        A = 1,
         penalty_type = "lasso",
+        family = "gaussian",
         initial_with_type = "ridge",
         beta_initial = NULL,
-        use_sparseC = FALSE,
-        inference = FALSE,
-        tune_ratio = FALSE,
-        validation_type = "cv",
-        type.measure = "default",
-        nfolds = 10,
+        hat_thetaA = NULL,
         remove_penalty_Z = FALSE,
         remove_penalty_W = FALSE,
+        inference = TRUE,
+        use_cv = TRUE,
+        type_measure = "default",
+        nfolds = 10,
         fix_lambda = NULL,
         lambda_list = NULL,
+        tune_ratio = FALSE,
         fix_ratio = NULL,
-        ratio_lower = NULL,
-        ratio_upper = NULL,
-        ratio_count = 10,
-        ratio_range = NULL,
+        ratio_list = NULL,
         gamma_adaptivelasso = 1/2,
-        summary_type = "multi",
-        holdout_p = 0.2,
+        use_sparseC = TRUE,
         seed.use = 97
 ){
     if(!family %in% c("gaussian","binomial")){
         stop("Select family from c('gaussian','binomial')")
     }
-    if(family == "gaussian"){
-        #warning("For gaussian family, no A is used. \n Just assume A is cancelled for full and reduced model.")
-        res<-htlgmm.linear(y,Z,W,study_info,summary_type,penalty_type,
-                           initial_with_type,beta_initial,
-                           remove_penalty_Z,remove_penalty_W,
-                           tune_ratio,fix_lambda,lambda_list,
-                           fix_ratio,ratio_lower,ratio_upper,
-                           ratio_count,ratio_range,gamma_adaptivelasso,
-                           inference,validation_type,
-                           nfolds,holdout_p,use_sparseC,seed.use)
-    }else{
-        res<-htlgmm.binary(y,Z,W,A,study_info,summary_type,penalty_type,
-                           initial_with_type,beta_initial,
-                           remove_penalty_Z,remove_penalty_W,
-                           tune_ratio,fix_lambda,lambda_list,
-                           fix_ratio,ratio_lower,ratio_upper,
-                           ratio_count,ratio_range,gamma_adaptivelasso,
-                           inference,validation_type,type.measure,nfolds,holdout_p,
-                           use_sparseC,seed.use)
-    }
+    if(A=='default'){if(family == "gaussian"){A=NULL}else{A=1}}
+
+    res<-htlgmm.default(y,Z,W,A,study_info,penalty_type,
+                        family,initial_with_type,beta_initial,
+                        hat_thetaA,remove_penalty_Z,
+                        remove_penalty_W,inference,use_cv,
+                        type_measure,nfolds,fix_lambda,
+                        lambda_list,tune_ratio,fix_ratio,
+                        ratio_list,gamma_adaptivelasso,
+                        use_sparseC,seed.use)
+
     return(res)
 }
 

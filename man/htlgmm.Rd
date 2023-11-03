@@ -8,90 +8,92 @@ htlgmm(
   y,
   Z,
   W = NULL,
+  A = "default",
   study_info = NULL,
-  family = "gaussian",
-  A = 1,
   penalty_type = "lasso",
+  family = "gaussian",
   initial_with_type = "ridge",
   beta_initial = NULL,
+  hat_thetaA = NULL,
   remove_penalty_Z = FALSE,
   remove_penalty_W = FALSE,
-  lambda = 0,
-  ratio = NULL,
+  inference = TRUE,
+  fix_lambda = NULL,
+  lambda_list = NULL,
+  fix_ratio = NULL,
   gamma_adaptivelasso = 1/2,
-  summary_type = "multi",
-  inference = FALSE,
-  use_sparseC = FALSE
+  use_sparseC = TRUE,
+  seed.use = 97
 )
 }
 \arguments{
-\item{y}{The y is the variable of interest.}
+\item{y}{The variable of interest, which can be continouse or binary.}
 
-\item{Z}{The overlapping features between main study and external study.}
+\item{Z}{The overlapping features in both main and external studies.}
 
 \item{W}{The unmatched features only in main study, the default is NULL.}
 
-\item{study_info}{The summary statistics for Z only from external study,
-which can be summarized in the type of multivariate version or univariate version.}
+\item{A}{The covariates for study-specific adjustment. The default is 'default', which is 'NULL' for 'gaussian' family, '1' for 'binomial' family.
+For continuous variable, we suggest scaling the features Z, W to eliminate intercept term.  If 'A = NULL', there is no intercept term included.
+For binary variable, we use intercept term by 'A=1' to adjust for different binary trait ratios in main and external studies.
+If there is only intercept term in A, we use 'A=1'.
+A are the features working for adjustment in reduced model, but A is not summarized in summary statistics(input:study_info).}
+
+\item{study_info}{The trained model from external study, including estimate coefficients, estimated variance-covariance matrix and sample size.
+The 'study_info' is in the format of list. The first item is 'Coeff', the second iterm is 'Covariance', and the third item is 'Sample_size'.}
+
+\item{penalty_type}{The penalty type for htlgmm, chosen from c("ols","lasso","adaptivelasso","ridge"). The default is "lasso".
+If 'penalty_type = 'ols' ', we use without penalty. (For continous y, we use OLS, and for binary y, we use logistic regression without penalty.)}
 
 \item{family}{The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".}
 
-\item{A}{Study specific adjustment factors, in particular, intercept term in logistic regression. The default is intercept term for
-
-G are the features working for adjustment in reduced model, but G is not summarized in summary statistics(input:study_info).}
-
-\item{penalty_type}{The penalty type for htlgmm, chosen from c("lasso","adaptivelasso","ridge"). The default is "lasso".}
-
-\item{initial_with_type}{Get initial estimation for beta using internal data only
-by cross validation using penalty regression, chosen from c("ridge","lasso"). The default is "ridge".}
+\item{initial_with_type}{Get initial estimation for beta using main study data only
+by cross validation using penalty regression, chosen from c("ridge","lasso") or by OLS, chosen from c("ols"). The default is "ridge". If penalty_type = 'ols', the default is 'ols'.
+(For continous y, we use OLS, and for binary y, we use logistic regression without penalty.)}
 
 \item{beta_initial}{The initial estimation for beta if a consistent estimator is available.
 E.g., one may input htlgmm result as beta_initial for more rounds to refine the final estimation.
-The default is NULL, and internal data is used for initial estimation.}
+The default is NULL, and main study is used for initial estimation according to 'initial_with_type'.}
 
-\item{remove_penalty_Z}{Not penalize overlapping features Z if it is TRUE. The default is FALSE.}
+\item{hat_thetaA}{If A is not NULL, one can provide hat_thetaA as the input. If 'hat_thetaA = NULL', we estimate hat_thetaA with OLS by main study.}
 
-\item{remove_penalty_W}{Not penalize unmatched features W if it is TRUE. The default is FALSE.}
+\item{remove_penalty_Z}{Not penalize Z if it is TRUE. The default is FALSE.}
 
-\item{lambda}{Without cross validation, fix the lambda. The default is NULL.}
+\item{remove_penalty_W}{Not penalize W if it is TRUE. The default is FALSE.}
 
-\item{ratio}{The fixed ratio of X for two-lambda strategy. The default is NULL.}
+\item{inference}{Whether to do inference without penalty or post-selection inference with adaptive lasso penalty. The default is TRUE.}
+
+\item{fix_lambda}{Without cross validation, fix the lambda. The default is NULL.}
+
+\item{lambda_list}{Customize the input lambda list for validation. The default is NULL to generate lambda list according to glmnet.}
+
+\item{fix_ratio}{The fixed ratio for two-lambda strategy. The ratio is multiplied for Z features. The default is NULL. If it is NULL, select the best ratio via cross validation or holdout validation.}
 
 \item{gamma_adaptivelasso}{The gamma for adaptive lasso. Select from c(1/2,1,2). The default is 1/2.}
 
-\item{summary_type}{The summary statistics type, chosen from c("multi","uni"), where the default is "multi".}
-
-\item{inference}{Whether to do post-selection inference, only work for adaptivelasso. The default is FALSE.}
-
 \item{use_sparseC}{Whether to use approximate version of weighting matrix C.
-If approximation, use the diagonal of inverse of C(inv_C) to approximate the inv_C. The default is FALSE.
-When internal data sample size is limited, use_sparseC = TRUE is recommended.
-When internal data sample size is large enough, use_sparseC = FALSE is recommended.}
+If approximation, use the diagonal of inverse of C(inv_C) to approximate the inv_C. The default is TRUE.
+When main study sample size is limited, use_sparseC = TRUE is recommended.
+When main study sample size is large enough, use_sparseC = FALSE is recommended.}
+
+\item{seed.use}{The seed for  97.}
 }
 \value{
-beta The target coefficient estimation.
-
-fix_lambda The output lambda.
-
-fix_ratio The output ratio.
-
-corrected_pos For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
-
-nonzero_pos For estimated beta, the nonzero positions.
-
-pval For nonzero_pos, the calculated p values.
-
-nonzero_var For nonzero_pos, the calculated variances.
-
 \itemize{
- \item{beta:} The target coefficient estimation.
- \item{fix_lambda:} The output lambda.
- \item{fix_ratio:} The output ratio.
- \item{corrected_pos:} For post-selection inference, they are the corrected position passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
- \item{nonzero_pos:} For estimated beta, the nonzero positions.
- \item{pval:} For nonzero_pos, the calculated p values.
- \item{nonzero_var:} For nonzero_pos, the calculated variances.
-}
+ \item{beta:} The target coefficient estimation, the features will go in the order of (A,Z,W).
+ \item{lambda_list:} The lambda list for cross validation.
+ \item{ratio_list:} The ratio list for validation (cross validation or holdout validation).
+ \item{fix_lambda:} If the fix_lambda is not null, we output fix_lambda.
+ \item{fix_ratio:} If the fix_ratio is not null, we output fix_ratio.
+ \item{selected_vars:} For inference or post-selection inference, we output the inference results by a list. \itemize{
+ \item{position:} The index of nonzero positions, the index comes from X = (A,Z,W).
+ \item{name:} The feature name of nonzero positions. If there is no default name, we name it after Ai, Zi, Wi.
+ \item{coef:} The coefficients of nonzero positions.
+ \item{variance:} The variances for features with OLS inference, for selected features with post-selection inference.
+ \item{pval:} For p values for nonzero positions.
+ \item{FDR_adjust_position:} The FDR adjusted positions passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
+ }
+ }
 }
 \description{
 htlgmm fits a generalized linear model via penalized generalized method of moments,
