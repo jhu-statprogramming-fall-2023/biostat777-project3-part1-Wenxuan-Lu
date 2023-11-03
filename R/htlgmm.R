@@ -223,7 +223,12 @@ cv.htlgmm<-function(
     if(!family %in% c("gaussian","binomial")){
         stop("Select family from c('gaussian','binomial')")
     }
-    if(A=='default'){if(family == "gaussian"){A=NULL}else{A=1}}
+
+    if(is.null(dim(A)[1])){
+        if(length(A)==1){
+            if(A=='default'){if(family == "gaussian"){A=NULL}else{A=1}}
+        }
+    }
 
     res<-htlgmm.default(y,Z,W,study_info,A,penalty_type,
                         family,initial_with_type,beta_initial,
