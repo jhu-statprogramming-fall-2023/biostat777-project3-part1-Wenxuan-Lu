@@ -10,13 +10,13 @@
 #' @param y The variable of interest, which can be continouse or binary.
 #' @param Z The overlapping features in both main and external studies.
 #' @param W The unmatched features only in main study, the default is NULL.
+#' @param study_info The trained model from external study, including estimate coefficients, estimated variance-covariance matrix and sample size.
+#' The 'study_info' is in the format of list. The first item is 'Coeff', the second iterm is 'Covariance', and the third item is 'Sample_size'.
 #' @param A The covariates for study-specific adjustment. The default is 'default', which is 'NULL' for 'gaussian' family, '1' for 'binomial' family.
 #' For continuous variable, we suggest scaling the features Z, W to eliminate intercept term.  If 'A = NULL', there is no intercept term included.
 #' For binary variable, we use intercept term by 'A=1' to adjust for different binary trait ratios in main and external studies.
 #' If there is only intercept term in A, we use 'A=1'.
 #' A are the features working for adjustment in reduced model, but A is not summarized in summary statistics(input:study_info).
-#' @param study_info The trained model from external study, including estimate coefficients, estimated variance-covariance matrix and sample size.
-#' The 'study_info' is in the format of list. The first item is 'Coeff', the second iterm is 'Covariance', and the third item is 'Sample_size'.
 #' @param penalty_type The penalty type for htlgmm, chosen from c("ols","lasso","adaptivelasso","ridge"). The default is "lasso".
 #' If 'penalty_type = 'ols' ', we use without penalty. (For continous y, we use OLS, and for binary y, we use logistic regression without penalty.)
 #' @param family The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".
@@ -68,8 +68,9 @@
 #'
 
 htlgmm<-function(
-        y,Z,W=NULL,A="default",
+        y,Z,W=NULL,
         study_info=NULL,
+        A="default",
         penalty_type = "lasso",
         family = "gaussian",
         initial_with_type = "ridge",
@@ -96,7 +97,7 @@ htlgmm<-function(
     tune_ratio = FALSE
     ratio_list = NULL
     type_measure = "default"
-    res<-htlgmm.default(y,Z,W,A,study_info,penalty_type,
+    res<-htlgmm.default(y,Z,W,study_info,A,penalty_type,
                         family,initial_with_type,beta_initial,
                         hat_thetaA,remove_penalty_Z,
                         remove_penalty_W,inference,use_cv,
@@ -122,13 +123,13 @@ htlgmm<-function(
 #' @param y The variable of interest, which can be continouse or binary.
 #' @param Z The overlapping features in both main and external studies.
 #' @param W The unmatched features only in main study, the default is NULL.
+#' @param study_info The trained model from external study, including estimate coefficients, estimated variance-covariance matrix and sample size.
+#' The 'study_info' is in the format of list. The first item is 'Coeff', the second iterm is 'Covariance', and the third item is 'Sample_size'.
 #' @param A The covariates for study-specific adjustment. The default is 'default', which is 'NULL' for 'gaussian' family, '1' for 'binomial' family.
 #' For continuous variable, we suggest scaling the features Z, W to eliminate intercept term.  If 'A = NULL', there is no intercept term included.
 #' For binary variable, we use intercept term by 'A=1' to adjust for different binary trait ratios in main and external studies.
 #' If there is only intercept term in A, we use 'A=1'.
 #' A are the features working for adjustment in reduced model, but A is not summarized in summary statistics(input:study_info).
-#' @param study_info The trained model from external study, including estimate coefficients, estimated variance-covariance matrix and sample size.
-#' The 'study_info' is in the format of list. The first item is 'Coeff', the second iterm is 'Covariance', and the third item is 'Sample_size'.
 #' @param penalty_type The penalty type for htlgmm, chosen from c("ols","lasso","adaptivelasso","ridge"). The default is "lasso".
 #' If 'penalty_type = 'ols' ', we use without penalty. (For continous y, we use OLS, and for binary y, we use logistic regression without penalty.)
 #' @param family The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".
@@ -192,8 +193,9 @@ htlgmm<-function(
 #'
 #'
 cv.htlgmm<-function(
-        y,Z,W=NULL,A="default",
+        y,Z,W=NULL,
         study_info=NULL,
+        A="default",
         penalty_type = "lasso",
         family = "gaussian",
         initial_with_type = "ridge",
@@ -219,7 +221,7 @@ cv.htlgmm<-function(
     }
     if(A=='default'){if(family == "gaussian"){A=NULL}else{A=1}}
 
-    res<-htlgmm.default(y,Z,W,A,study_info,penalty_type,
+    res<-htlgmm.default(y,Z,W,study_info,A,penalty_type,
                         family,initial_with_type,beta_initial,
                         hat_thetaA,remove_penalty_Z,
                         remove_penalty_W,inference,use_cv,

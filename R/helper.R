@@ -286,8 +286,9 @@ cv_dev_lambda_ratio_func<-function(index_fold,Z,W,A,y,
 
 
 htlgmm.default<-function(
-        y,Z,W=NULL,A=1,
+        y,Z,W=NULL,
         study_info=NULL,
+        A=1,
         penalty_type = "lasso",
         family = "gaussian",
         initial_with_type = "ridge",
