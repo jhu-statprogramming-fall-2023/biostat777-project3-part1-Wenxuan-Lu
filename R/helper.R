@@ -7,15 +7,9 @@ mu_prime_func<-function(x,family){
     else if(family=='binomial'){return(expit(x)*(1-expit(x)))}
 }
 Delta_opt<-function(y,Z,W,family,
-                    study_info,A=NULL,hat_thetaA=NULL,
-                    beta=NULL){
-    if(is.null(A)){
-        pA=0
-    }else if(is.null(dim(A)[1])){
-        pA=1
-    }else{
-        pA=ncol(A)
-    }
+                    study_info,A=NULL,pA=NULL,
+                    beta=NULL,hat_thetaA=NULL,
+                    V_thetaA=NULL){
     X=cbind(A,Z,W)
     XR=cbind(A,Z)
     n_main=nrow(Z)
@@ -26,20 +20,18 @@ Delta_opt<-function(y,Z,W,family,
     V_U1=(1/n_main)*crossprod(X*c(mu_X_beta-y))
     V_U2=(1/n_main)*crossprod(Z*c(mu_X_beta-mu_XR_theta))
     Cov_U1U2=(1/n_main)*crossprod(X*c(mu_X_beta-y),Z*c(mu_X_beta-mu_XR_theta))
-    Gamma2Z=(1/n_main)*crossprod(Z*mu_prime_func(mu_XR_theta,family),Z)
+    Gamma2Z=(1/n_main)*crossprod(Z*c(mu_prime_func(mu_XR_theta,family)),Z)
     V_thetaZ=study_info[[1]]$Covariance
-    Delta22 = V_U2
-    +Gamma2Z%*%V_thetaZ%*%t(Gamma2Z)
-    Delta12 = Cov_U1U2
+    Delta22=V_U2 +Gamma2Z%*%(n_main*V_thetaZ)%*%t(Gamma2Z)
+    Delta12=Cov_U1U2
     if(pA!=0){
-        Gamma2A=(1/n_main)*crossprod(Z*mu_prime_func(mu_XR_theta,family),A)
-        inv_Gamma3=ginv((1/n_main)*crossprod(XR*mu_prime_func(mu_XR_theta,family),XR))
-        V_thetaA=inv_Gamma3[1:pA,]%*%(1/n_main)*crossprod(XR*c(mu_XR_theta-y))%*%inv_Gamma3[,1:pA]
+        Gamma2A=(1/n_main)*crossprod(Z*c(mu_prime_func(mu_XR_theta,family)),A)
+        inv_Gamma3=ginv((1/n_main)*crossprod(XR*c(mu_prime_func(mu_XR_theta,family)),XR))
 
         Cov_U1theta=(1/n_main)*crossprod(X*c(mu_X_beta-y),XR*c(mu_XR_theta-y))%*%inv_Gamma3[,1:pA]%*%t(Gamma2A)
         Cov_U2theta=(1/n_main)*crossprod(Z*c(mu_X_beta-mu_XR_theta),XR*c(mu_XR_theta-y))%*%inv_Gamma3[,1:pA]%*%t(Gamma2A)
 
-        Delta22 = Delta22 + Gamma2A%*%V_thetaA%*%t(Gamma2A)
+        Delta22 = Delta22 + Gamma2A%*%(n_main*V_thetaA)%*%t(Gamma2A)
         + Cov_U2theta+t(Cov_U2theta)
         Delta12 = Delta12 + Cov_U1theta
     }
@@ -284,7 +276,6 @@ cv_dev_lambda_ratio_func<-function(index_fold,Z,W,A,y,
 
 
 
-
 htlgmm.default<-function(
         y,Z,W=NULL,
         study_info=NULL,
@@ -294,6 +285,7 @@ htlgmm.default<-function(
         initial_with_type = "ridge",
         beta_initial = NULL,
         hat_thetaA = NULL,
+        V_thetaA = NULL,
         remove_penalty_Z = FALSE,
         remove_penalty_W = FALSE,
         inference = TRUE,
@@ -338,17 +330,27 @@ htlgmm.default<-function(
     pZ=ncol(Z)
     if(is.null(W)){pW=0}else{pW=ncol(W)}
     if(is.null(A)){pA=0}else{
-        if(A==1){A=matrix(1,nrow=nZ,ncol=1)}
+        if(is.null(dim(A)[1])){
+            if(length(A)==1){
+                if(A==1){A=matrix(1,nrow=nZ,ncol=1)}
+            }
+        }
         pA=ncol(A)
     }
     if(nZ<2*pZ+pW+pA){use_sparseC=TRUE}
 
-    if(family == "gaussian"){pseudo_Xy=pseudo_Xy_gaussian}
-    else if(family == "binomial"){pseudo_Xy=pseudo_Xy_binomial}
+    if(family == "gaussian"){pseudo_Xy=pseudo_Xy_gaussian
+    }else if(family == "binomial"){pseudo_Xy=pseudo_Xy_binomial}
 
-    if(pA!=0 & is.null(hat_thetaA)){
-        hat_thetaA_glm=glm(y~0+.,data = data.frame(y,A,Z),family = family)
-        hat_thetaA=hat_thetaA_glm$coefficients[1:pA]
+    if(pA!=0){
+        if(is.null(hat_thetaA)){
+            if(!is.null(V_thetaA)){
+                stop("With customized hat_thetaA input, V_thetaA is also needed")
+            }
+            hat_thetaA_glm=glm(y~0+.,data = data.frame(y,A,Z),family = family)
+            hat_thetaA=hat_thetaA_glm$coefficients[1:pA]
+            V_thetaA=vcov(hat_thetaA_glm)[1:pA,1:pA]
+        }
     }
 
     X<-cbind(A,Z,W)
@@ -385,7 +387,7 @@ htlgmm.default<-function(
                                   alpha = initial_alpha,
                                   penalty.factor = fix_penalty[-1],
                                   family=family)
-            beta_initial=c(coef.glmnet(fit_initial,s="lambda.min"))
+            beta_initial=as.vector(coef.glmnet(fit_initial,s="lambda.min"))
         }else{
             stop("With A, the first column of A should be 1 for intercept.")
         }
@@ -399,8 +401,9 @@ htlgmm.default<-function(
     inv_C = Delta_opt(y=y,Z=Z,W=W,
                       family=family,
                       study_info=study_info,
-                      A=A,hat_thetaA=hat_thetaA,
-                      beta=beta_initial)
+                      A=A,pA=pA,beta=beta_initial,
+                      hat_thetaA=hat_thetaA,
+                      V_thetaA = V_thetaA)
     if(use_sparseC){
         C_half<-diag(1/sqrt(diag(inv_C)))
     }else{
@@ -545,8 +548,9 @@ htlgmm.default<-function(
         inv_C = Delta_opt(y=y,Z=Z,W=W,
                           family=family,
                           study_info=study_info,
-                          A=A,hat_thetaA=hat_thetaA,
-                          beta=beta)
+                          A=A,pA=pA,beta=beta_initial,
+                          hat_thetaA=hat_thetaA,
+                          V_thetaA = V_thetaA)
         inv_C_svd<-fast.svd(inv_C+diag(1e-15,nrow(inv_C)))
         C_half<-inv_C_svd$v%*%diag(1/sqrt(inv_C_svd$d))%*%t(inv_C_svd$u)
 
