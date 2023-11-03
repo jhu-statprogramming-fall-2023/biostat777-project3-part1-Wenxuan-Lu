@@ -335,10 +335,12 @@ htlgmm.default<-function(
 
     nZ=nrow(Z)
     nZext=study_info[[1]]$Sample_size
-    if(A==1){A=matrix(1,nrow=nZ,ncol=1)}
     pZ=ncol(Z)
     if(is.null(W)){pW=0}else{pW=ncol(W)}
-    if(is.null(A)){pA=0}else{pA=ncol(A)}
+    if(is.null(A)){pA=0}else{
+        if(A==1){A=matrix(1,nrow=nZ,ncol=1)}
+        pA=ncol(A)
+    }
     if(nZ<2*pZ+pW+pA){use_sparseC=TRUE}
 
     if(family == "gaussian"){pseudo_Xy=pseudo_Xy_gaussian}
