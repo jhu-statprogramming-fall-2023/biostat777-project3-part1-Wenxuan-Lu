@@ -54,6 +54,7 @@
 #'  \item{variance:} The variances for features with OLS inference, for selected features with post-selection inference.
 #'  \item{pval:} For p values for nonzero positions.
 #'  \item{FDR_adjust_position:} The FDR adjusted positions passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
+#'  \item{FDR_adjust_name:} The feature name based on FDR_adjust_position.
 #'  }
 #'  }
 #'
