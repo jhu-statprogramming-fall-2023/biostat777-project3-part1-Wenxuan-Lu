@@ -360,6 +360,7 @@ htlgmm.default<-function(
     Aid<-1:pA
     Zid<-(pA+1):(pA+pZ)
     Wid<-(pA+pZ+1):(pA+pZ+pW)
+    Acolnames=NULL
     if(pA>0){
         Acolnames=colnames(A)
         if(is.null(Acolnames[1])){
