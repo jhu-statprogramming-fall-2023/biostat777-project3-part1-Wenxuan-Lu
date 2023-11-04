@@ -27,8 +27,8 @@ Delta_opt<-function(y,Z,W,family,
     if(pA!=0){
         Gamma2A=(1/n_main)*crossprod(Z*c(mu_prime_func(mu_XR_theta,family)),A)
         inv_Gamma3=ginv((1/n_main)*crossprod(XR*c(mu_prime_func(mu_XR_theta,family)),XR))
-        print(V_thetaA)
-        print((1/n_main)*inv_Gamma3[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_func(mu_XR_theta,family)-y)) )%*%inv_Gamma3[,1:pA])
+        #print(V_thetaA)
+        #print((1/n_main)*inv_Gamma3[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_func(mu_XR_theta,family)-y)) )%*%inv_Gamma3[,1:pA])
         #V_thetaA = (1/n_main)*inv_Gamma3[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_func(mu_XR_theta,family)-y)) )%*%inv_Gamma3[,1:pA]
 
         Cov_U1theta=(1/n_main)*crossprod(X*c(mu_X_beta-y),XR*c(mu_XR_theta-y))%*%inv_Gamma3[,1:pA]%*%t(Gamma2A[,1:pA])
@@ -360,6 +360,24 @@ htlgmm.default<-function(
     Aid<-1:pA
     Zid<-(pA+1):(pA+pZ)
     Wid<-(pA+pZ+1):(pA+pZ+pW)
+    if(pA>0){
+        Acolnames=colnames(A)
+        if(is.null(Acolnames[1])){
+            Acolnames=paste0('A',1:pA)
+        }
+        if(unique(A[,1]) == 1){
+            Acolnames[1]='intercept'
+        }
+    }
+    Zcolnames=colnames(Z)
+    Wcolnames=colnames(W)
+    if(is.null(Zcolnames[1])){
+        Zcolnames=paste0('Z',1:pZ)
+    }
+    if(is.null(Wcolnames[1])){
+        Wcolnames=paste0('W',1:pW)
+    }
+    Xcolnames<-c(Acolnames,Zcolnames,Wcolnames)
     fix_penalty<-c(rep(0,pA),rep(1,pZ+pW))
     if(remove_penalty_Z){fix_penalty[Zid]<-0}else{
         if(!is.null(fix_ratio)){fix_penalty[Zid]<-fix_ratio}
@@ -577,10 +595,12 @@ htlgmm.default<-function(
         return_list<-c(return_list,
                        list("selected_vars"=
                                 list("position"=index_nonzero,
+                                     "name"=Xcolnames[index_nonzero],
                                      "coef"=beta[index_nonzero],
-                                     "pval"=pval_final,
                                      "variance"=final_v,
-                                     "FDR_adjust_position"=selected_pos)
+                                     "pval"=pval_final,
+                                     "FDR_adjust_position"=selected_pos,
+                                     "FDR_adjust_name"=Xcolnames[selected_pos])
                        ))
     }
     return(return_list)
