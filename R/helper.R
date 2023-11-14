@@ -31,8 +31,8 @@ Delta_opt<-function(y,Z,W,family,
         #print((1/n_main)*inv_Gamma3[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_func(mu_XR_theta,family)-y)) )%*%inv_Gamma3[,1:pA])
         #V_thetaA = (1/n_main)*inv_Gamma3[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_func(mu_XR_theta,family)-y)) )%*%inv_Gamma3[,1:pA]
 
-        Cov_U1theta=(1/n_main)*crossprod(X*c(mu_X_beta-y),XR*c(mu_XR_theta-y))%*%inv_Gamma3[,1:pA]%*%t(Gamma2A[,1:pA])
-        Cov_U2theta=(1/n_main)*crossprod(Z*c(mu_X_beta-mu_XR_theta),XR*c(mu_XR_theta-y))%*%inv_Gamma3[,1:pA]%*%t(Gamma2A[,1:pA])
+        Cov_U1theta=(1/n_main)*crossprod(X*c(mu_X_beta-y),XR*c(mu_XR_theta-y))%*%inv_Gamma3[,1:pA]%*%(t(Gamma2A)[1:pA,])
+        Cov_U2theta=(1/n_main)*crossprod(Z*c(mu_X_beta-mu_XR_theta),XR*c(mu_XR_theta-y))%*%inv_Gamma3[,1:pA]%*%(t(Gamma2A)[1:pA,])
 
         Delta22 = Delta22 + Gamma2A%*%(n_main*V_thetaA)%*%t(Gamma2A)
         + Cov_U2theta+t(Cov_U2theta)
