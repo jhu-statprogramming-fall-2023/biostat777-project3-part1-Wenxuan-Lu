@@ -94,7 +94,11 @@ htlgmm<-function(
         stop("Select family from c('gaussian','binomial')")
     }
 
-    if(A=='default'){if(family == "gaussian"){A=NULL}else{A=1}}
+    if(is.null(dim(A)[1])){
+        if(length(A)==1){
+            if(A=='default'){if(family == "gaussian"){A=NULL}else{A=1}}
+        }
+    }
     use_cv = FALSE
     nfolds = 10
     tune_ratio = FALSE
