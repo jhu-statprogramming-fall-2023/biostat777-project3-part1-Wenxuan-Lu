@@ -386,7 +386,7 @@ htlgmm.default<-function(
         if(!is.null(fix_ratio)){fix_penalty[Zid]<-fix_ratio}
     }
     if(remove_penalty_W){fix_penalty[Wid]<-0}
-    if((remove_penalty_Z & remove_penalty_W)|(length(unique(fix_penalty))==1 & unique(fix_penalty) == 0) ){
+    if((remove_penalty_Z & remove_penalty_W)|(length(unique(fix_penalty))==1 & unique(fix_penalty)[1] == 0) ){
         penalty_type = "none"
         warning("All penalties are removed, turn to no penalties!")
     }
