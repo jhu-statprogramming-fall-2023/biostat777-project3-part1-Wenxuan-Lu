@@ -306,19 +306,14 @@ htlgmm.default<-function(
 ){
     set.seed(seed.use)
     if (is.null(study_info)){stop("Please input study_info as trained model")}
-    if(!penalty_type %in% c("ols","adaptivelasso","lasso","ridge")){
-        stop("Select penalty type from c('ols','adaptivelasso','lasso','ridge').")
+    if(!penalty_type %in% c("none","adaptivelasso","lasso","ridge")){
+        stop("Select penalty type from c('none','adaptivelasso','lasso','ridge').")
     }
     if(!type_measure%in% c("default", "mse", "deviance", "auc")){
         stop("Select type_measure from c('default','deviance','auc')")
     }
     final_alpha = 1
     if(penalty_type == "ridge"){final_alpha = 0}
-    if(penalty_type == "ols"){
-        initial_with_type = "ols"
-        use_cv = FALSE
-        tune_ratio = FALSE
-    }
 
     if(!is.null(fix_ratio)){
         if(tune_ratio){
@@ -345,18 +340,7 @@ htlgmm.default<-function(
     if(family == "gaussian"){pseudo_Xy=pseudo_Xy_gaussian
     }else if(family == "binomial"){pseudo_Xy=pseudo_Xy_binomial}
 
-    if(pA!=0){
-        if(is.null(hat_thetaA)){
-            if(!is.null(V_thetaA)){
-                stop("With customized hat_thetaA input, V_thetaA is also needed")
-            }
-            hat_thetaA_glm=glm(y~0+.,data = data.frame(y,A,Z),family = family)
-            hat_thetaA=hat_thetaA_glm$coefficients[1:pA]
-            V_thetaA=vcov(hat_thetaA_glm)[1:pA,1:pA]
-        }
-    }
 
-    X<-cbind(A,Z,W)
     Aid<-1:pA
     Zid<-(pA+1):(pA+pZ)
     Wid<-(pA+pZ+1):(pA+pZ+pW)
@@ -369,34 +353,57 @@ htlgmm.default<-function(
         if(unique(A[,1]) == 1){
             Acolnames[1]='intercept'
         }
+        colnames(A)=Acolnames
     }
     Zcolnames=colnames(Z)
     Wcolnames=colnames(W)
     if(is.null(Zcolnames[1])){
         Zcolnames=paste0('Z',1:pZ)
+        colnames(Z)=Zcolnames
     }
     if(is.null(Wcolnames[1])){
         Wcolnames=paste0('W',1:pW)
+        colnames(W)=Wcolnames
     }
     Xcolnames<-c(Acolnames,Zcolnames,Wcolnames)
+    X<-cbind(A,Z,W)
+
+    if(pA!=0){
+        if(is.null(hat_thetaA)){
+            if(!is.null(V_thetaA)){
+                stop("With customized hat_thetaA input, V_thetaA is also needed")
+            }
+            df=data.frame(y,A,Z)
+            hat_thetaA_glm=glm(y~0+.,data = df,family = family)
+            hat_thetaA=hat_thetaA_glm$coefficients[1:pA]
+            V_thetaA=vcov(hat_thetaA_glm)[1:pA,1:pA]
+        }
+    }
+
+
     fix_penalty<-c(rep(0,pA),rep(1,pZ+pW))
     if(remove_penalty_Z){fix_penalty[Zid]<-0}else{
         if(!is.null(fix_ratio)){fix_penalty[Zid]<-fix_ratio}
     }
     if(remove_penalty_W){fix_penalty[Wid]<-0}
-    if(remove_penalty_Z & remove_penalty_W){
-        penalty_type = "ols"
-        warning("All penalties are removed, turn to ols without penalties!")
+    if((remove_penalty_Z & remove_penalty_W)|(length(unique(fix_penalty))==1 & unique(fix_penalty) == 0) ){
+        penalty_type = "none"
+        warning("All penalties are removed, turn to no penalties!")
     }
-
+    if(penalty_type == "none"){
+        initial_with_type = "glm"
+        use_cv = FALSE
+        tune_ratio = FALSE
+    }
     if(!is.null(beta_initial) & length(beta_initial)!=pA+pZ+pW){
         warning("beta_initial should be from A,Z,W.\n Length not match, compute default initial instead.")
         beta_initial=NULL
     }
-    if(is.null(beta_initial) & initial_with_type %in% c("ols","ridge","lasso")){
+    if(is.null(beta_initial) & initial_with_type %in% c("glm","ridge","lasso")){
         if(initial_with_type == "ridge"){initial_alpha=0}else{initial_alpha=1}
-        if(initial_with_type == "ols"){
-            fit_initial=glm(y~0+.,data = data.frame(y,X),family = family)
+        if(initial_with_type == "glm"){
+            df=data.frame(y,X)
+            fit_initial=glm(y~0+.,data = df,family = family)
             beta_initial=fit_initial$coefficients
         }else if(pA == 0){
             fit_initial=cv.glmnet(x=X,y= y,
@@ -440,13 +447,14 @@ htlgmm.default<-function(
     pseudo_X<-pseudo_Xy_list$pseudo_X/initial_sf
     pseudo_y<-pseudo_Xy_list$pseudo_y/initial_sf
 
-    # Fit final model
-
-    if(penalty_type != "ols"|is.null(fix_lambda)|is.null(lambda_list)){
-        fit_final<-glmnet(x= pseudo_X,y= pseudo_y,standardize=F,
-                          intercept=F,alpha = final_alpha,penalty.factor = w_adaptive)
-        lambda_list<-fit_final$lambda
-        lambda_list<-lambda_list[!is.na(lambda_list)]
+    # generate lambda list from glmnet
+    if(penalty_type != "none"){
+        if(is.null(fix_lambda)&is.null(lambda_list)){
+            fit_final<-glmnet(x= pseudo_X,y= pseudo_y,standardize=F,
+                              intercept=F,alpha = final_alpha,penalty.factor = w_adaptive)
+            lambda_list<-fit_final$lambda
+            lambda_list<-lambda_list[!is.na(lambda_list)]
+        }
     }
     if(!is.null(fix_lambda)){
         use_cv = FALSE
@@ -463,7 +471,7 @@ htlgmm.default<-function(
         }
     }else{tune_ratio<-FALSE}
     if(!use_cv){
-        if(penalty_type == "ols"){
+        if(penalty_type == "none"){
             fit_final_ols=lm(y~0+.,data = data.frame(y= pseudo_y,pseudo_X))
             beta=fit_final_ols$coefficients
             return_list<-list("beta"=beta)
@@ -475,8 +483,7 @@ htlgmm.default<-function(
                                                lambda = fix_lambda)
                 beta<-coef.glmnet(fit_final_fixed_lambda)[-1]
                 return_list<-list("beta"=beta,
-                                  "fix_lambda"=fix_lambda,
-                                  "fix_ratio"=fix_ratio)
+                                  "fix_lambda"=fix_lambda)
             }else{
                 fit_final_lambda_list<-glmnet(x= pseudo_X,y= pseudo_y,standardize=F,
                                               intercept=F,alpha = final_alpha,
@@ -485,6 +492,10 @@ htlgmm.default<-function(
                 return_list<-list("beta"=fit_final_lambda_list$beta,
                                   "lambda_list"=fit_final_lambda_list$lambda)
                 inference=FALSE
+            }
+            if(!is.null(fix_ratio)){
+                return_list<-c(return_list,
+                               list("fix_ratio"=fix_ratio))
             }
         }
     }else{

@@ -7,7 +7,7 @@
 #'
 #' @details htlgmm: Heterogeneous Transfer Learning via generalized method of moments(GMM).
 #'
-#' @param y The variable of interest, which can be continouse or binary.
+#' @param y The variable of interest, which can be continuouse or binary.
 #' @param Z The overlapping features in both main and external studies.
 #' @param W The unmatched features only in main study, the default is NULL.
 #' @param study_info The trained model from external study, including estimate coefficients, estimated variance-covariance matrix and sample size.
@@ -17,17 +17,17 @@
 #' For binary variable, we use intercept term by 'A=1' to adjust for different binary trait ratios in main and external studies.
 #' If there is only intercept term in A, we use 'A=1'.
 #' A are the features working for adjustment in reduced model, but A is not summarized in summary statistics(input:study_info).
-#' @param penalty_type The penalty type for htlgmm, chosen from c("ols","lasso","adaptivelasso","ridge"). The default is "lasso".
-#' If 'penalty_type = 'ols' ', we use without penalty. (For continous y, we use OLS, and for binary y, we use logistic regression without penalty.)
+#' @param penalty_type The penalty type for htlgmm, chosen from c("none","lasso","adaptivelasso","ridge"). The default is "lasso".
+#' If 'penalty_type = 'none' ', we use without penalty. (For continuous y, we use ordinary least square, and for binary y, we use logistic regression without penalty.)
 #' @param family The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".
 #' @param initial_with_type Get initial estimation for beta using main study data only
-#' by cross validation using penalty regression, chosen from c("ridge","lasso") or by OLS, chosen from c("ols"). The default is "ridge". If penalty_type = 'ols', the default is 'ols'.
-#' (For continous y, we use OLS, and for binary y, we use logistic regression without penalty.)
+#' by cross validation using penalty regression, chosen from c("ridge","lasso") or by GLM, chosen from c("glm"). The default is "ridge". If penalty_type = 'glm',
+#' for continuous y, we use ordinary least square, and for binary y, we use logistic regression without penalty.)
 #' @param beta_initial The initial estimation for beta if a consistent estimator is available.
 #' E.g., one may input htlgmm result as beta_initial for more rounds to refine the final estimation.
 #' The default is NULL, and main study is used for initial estimation according to 'initial_with_type'.
-#' @param hat_thetaA If A is not NULL, one can provide hat_thetaA as the input. If 'hat_thetaA = NULL', we estimate hat_thetaA with OLS by main study.
-#' @param V_thetaA If A is not NULL, one can provide V_thetaA as the input. If 'V_thetaA = NULL', we estimate V_thetaA with OLS by main study.
+#' @param hat_thetaA If A is not NULL, one can provide hat_thetaA as the input. If 'hat_thetaA = NULL', we estimate hat_thetaA with glm by main study.
+#' @param V_thetaA If A is not NULL, one can provide V_thetaA as the input. If 'V_thetaA = NULL', we estimate V_thetaA with glm by main study.
 #' @param remove_penalty_Z Not penalize Z if it is TRUE. The default is FALSE.
 #' @param remove_penalty_W Not penalize W if it is TRUE. The default is FALSE.
 #' @param inference Whether to do inference without penalty or post-selection inference with adaptive lasso penalty. The default is TRUE.
@@ -51,7 +51,7 @@
 #'  \item{position:} The index of nonzero positions, the index comes from X = (A,Z,W).
 #'  \item{name:} The feature name of nonzero positions. If there is no default name, we name it after Ai, Zi, Wi.
 #'  \item{coef:} The coefficients of nonzero positions.
-#'  \item{variance:} The variances for features with OLS inference, for selected features with post-selection inference.
+#'  \item{variance:} The variances for features with glm inference, for selected features with post-selection inference.
 #'  \item{pval:} For p values for nonzero positions.
 #'  \item{FDR_adjust_position:} The FDR adjusted positions passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
 #'  \item{FDR_adjust_name:} The feature name based on FDR_adjust_position.
@@ -127,7 +127,7 @@ htlgmm<-function(
 #'
 #' @details Cross validation for htlgmm.
 #'
-#' @param y The variable of interest, which can be continouse or binary.
+#' @param y The variable of interest, which can be continuouse or binary.
 #' @param Z The overlapping features in both main and external studies.
 #' @param W The unmatched features only in main study, the default is NULL.
 #' @param study_info The trained model from external study, including estimate coefficients, estimated variance-covariance matrix and sample size.
@@ -137,17 +137,17 @@ htlgmm<-function(
 #' For binary variable, we use intercept term by 'A=1' to adjust for different binary trait ratios in main and external studies.
 #' If there is only intercept term in A, we use 'A=1'.
 #' A are the features working for adjustment in reduced model, but A is not summarized in summary statistics(input:study_info).
-#' @param penalty_type The penalty type for htlgmm, chosen from c("ols","lasso","adaptivelasso","ridge"). The default is "lasso".
-#' If 'penalty_type = 'ols' ', we use without penalty. (For continous y, we use OLS, and for binary y, we use logistic regression without penalty.)
+#' @param penalty_type The penalty type for htlgmm, chosen from c("none","lasso","adaptivelasso","ridge"). The default is "lasso".
+#' If 'penalty_type = 'none' ', we use without penalty. (For continuous y, we use ordinary least square, and for binary y, we use logistic regression without penalty.)
 #' @param family The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".
 #' @param initial_with_type Get initial estimation for beta using main study data only
-#' by cross validation using penalty regression, chosen from c("ridge","lasso") or by OLS, chosen from c("ols"). The default is "ridge". If penalty_type = 'ols', the default is 'ols'.
-#' (For continuous y, we use OLS, and for binary y, we use logistic regression without penalty.)
+#' by cross validation using penalty regression, chosen from c("ridge","lasso") or by GLM, chosen from c("glm"). The default is "ridge". If penalty_type = 'glm',
+#' for continuous y, we use ordinary least square, and for binary y, we use logistic regression without penalty.)
 #' @param beta_initial The initial estimation for beta if a consistent estimator is available.
 #' E.g., one may input htlgmm result as beta_initial for more rounds to refine the final estimation.
 #' The default is NULL, and main study is used for initial estimation according to 'initial_with_type'.
-#' @param hat_thetaA If A is not NULL, one can provide hat_thetaA as the input. If 'hat_thetaA = NULL', we estimate hat_thetaA with OLS by main study.
-#' @param V_thetaA If A is not NULL, one can provide V_thetaA as the input. If 'V_thetaA = NULL', we estimate V_thetaA with OLS by main study.
+#' @param hat_thetaA If A is not NULL, one can provide hat_thetaA as the input. If 'hat_thetaA = NULL', we estimate hat_thetaA with glm by main study.
+#' @param V_thetaA If A is not NULL, one can provide V_thetaA as the input. If 'V_thetaA = NULL', we estimate V_thetaA with glm by main study.
 #' @param remove_penalty_Z Not penalize Z if it is TRUE. The default is FALSE.
 #' @param remove_penalty_W Not penalize W if it is TRUE. The default is FALSE.
 #' @param inference Whether to do inference without penalty or post-selection inference with adaptive lasso penalty. The default is TRUE.
@@ -181,7 +181,7 @@ htlgmm<-function(
 #'  \item{position:} The index of nonzero positions, the index comes from X = (A,Z,W).
 #'  \item{name:} The feature name of nonzero positions. If there is no default name, we name it after Ai, Zi, Wi.
 #'  \item{coef:} The coefficients of nonzero positions.
-#'  \item{variance:} The variances for features with OLS inference, for selected features with post-selection inference.
+#'  \item{variance:} The variances for features with glm inference, for selected features with post-selection inference.
 #'  \item{pval:} For p values for nonzero positions.
 #'  \item{FDR_adjust_position:} The FDR adjusted positions passing significant level 0.05 after BH adjustment (Benjamini & Hochberg).
 #'  \item{FDR_adjust_name:} The feature name based on FDR_adjust_position.
