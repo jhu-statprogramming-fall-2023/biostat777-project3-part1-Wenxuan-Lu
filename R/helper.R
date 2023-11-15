@@ -399,28 +399,30 @@ htlgmm.default<-function(
         warning("beta_initial should be from A,Z,W.\n Length not match, compute default initial instead.")
         beta_initial=NULL
     }
-    if(is.null(beta_initial) & initial_with_type %in% c("glm","ridge","lasso")){
-        if(initial_with_type == "ridge"){initial_alpha=0}else{initial_alpha=1}
-        if(initial_with_type == "glm"){
-            df=data.frame(y,X)
-            fit_initial=glm(y~0+.,data = df,family = family)
-            beta_initial=fit_initial$coefficients
-        }else if(pA == 0){
-            fit_initial=cv.glmnet(x=X,y= y,
-                                  alpha = initial_alpha,
-                                  penalty.factor = fix_penalty,
-                                  family=family)
-            beta_initial=c(coef.glmnet(fit_initial,s="lambda.min")[-1])
-        }else if(unique(A[,1])==1){
-            fit_initial=cv.glmnet(x=X[,-1],y=y,
-                                  alpha = initial_alpha,
-                                  penalty.factor = fix_penalty[-1],
-                                  family=family)
-            beta_initial=as.vector(coef.glmnet(fit_initial,s="lambda.min"))
-        }else{
-            stop("With A, the first column of A should be 1 for intercept.")
-        }
-    }else{stop("Select Initial Type from c('ridge','lasso')")}
+    if(is.null(beta_initial)){
+        if(initial_with_type %in% c("glm","ridge","lasso")){
+            if(initial_with_type == "ridge"){initial_alpha=0}else{initial_alpha=1}
+            if(initial_with_type == "glm"){
+                df=data.frame(y,X)
+                fit_initial=glm(y~0+.,data = df,family = family)
+                beta_initial=fit_initial$coefficients
+            }else if(pA == 0){
+                fit_initial=cv.glmnet(x=X,y= y,
+                                      alpha = initial_alpha,
+                                      penalty.factor = fix_penalty,
+                                      family=family)
+                beta_initial=c(coef.glmnet(fit_initial,s="lambda.min")[-1])
+            }else if(unique(A[,1])==1){
+                fit_initial=cv.glmnet(x=X[,-1],y=y,
+                                      alpha = initial_alpha,
+                                      penalty.factor = fix_penalty[-1],
+                                      family=family)
+                beta_initial=as.vector(coef.glmnet(fit_initial,s="lambda.min"))
+            }else{
+                stop("With A, the first column of A should be 1 for intercept.")
+            }
+        }else{stop("Select Initial Type from c('ridge','lasso')")}
+    }
     if (penalty_type == "adaptivelasso"){
         w_adaptive<-1/abs(beta_initial)^gamma_adaptivelasso
         w_adaptive[is.infinite(w_adaptive)]<-max(w_adaptive[!is.infinite(w_adaptive)])*100
