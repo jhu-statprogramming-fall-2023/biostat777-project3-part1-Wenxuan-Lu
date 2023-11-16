@@ -17,21 +17,21 @@ Delta_opt<-function(y,Z,W,family,
     V_U1=(1/n_main)*crossprod(X*c(mu_X_beta-y))
     V_U2=(1/n_main)*crossprod(Z*c(mu_X_beta-mu_XR_theta))
     Cov_U1U2=(1/n_main)*crossprod(X*c(mu_X_beta-y),Z*c(mu_X_beta-mu_XR_theta))
-    Gamma2Z=(1/n_main)*crossprod(Z*c(mu_prime_XR_theta),Z)
+    GammaZZ=(1/n_main)*crossprod(Z*c(mu_prime_XR_theta),Z)
     V_thetaZ=study_info[[1]]$Covariance
-    Delta22=V_U2 +Gamma2Z%*%(n_main*V_thetaZ)%*%t(Gamma2Z)
+    Delta22=V_U2 +GammaZZ%*%(n_main*V_thetaZ)%*%t(GammaZZ)
     Delta12=Cov_U1U2
     if(pA!=0){
-        Gamma2A=(1/n_main)*crossprod(Z*c(mu_prime_XR_theta),A)
-        inv_Gamma3=ginv((1/n_main)*crossprod(XR*c(mu_prime_XR_theta),XR))
+        GammaZA=(1/n_main)*crossprod(Z*c(mu_prime_XR_theta),A)
+        inv_GammaXRXR=ginv((1/n_main)*crossprod(XR*c(mu_prime_XR_theta),XR))
         #print(V_thetaA)
-        #print((1/n_main)*inv_Gamma3[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_XR_theta-y)) )%*%inv_Gamma3[,1:pA])
-        #V_thetaA = (1/n_main)*inv_Gamma3[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_XR_theta-y)) )%*%inv_Gamma3[,1:pA]
+        #print((1/n_main)*inv_GammaXRXR[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_XR_theta-y)) )%*%inv_GammaXRXR[,1:pA])
+        #V_thetaA = (1/n_main)*inv_GammaXRXR[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_XR_theta-y)) )%*%inv_GammaXRXR[,1:pA]
 
-        Cov_U1theta=(1/n_main)*crossprod(X*c(mu_X_beta-y),XR*c(mu_XR_theta-y))%*%inv_Gamma3[,1:pA]%*%(t(Gamma2A)[1:pA,])
-        Cov_U2theta=(1/n_main)*crossprod(Z*c(mu_X_beta-mu_XR_theta),XR*c(mu_XR_theta-y))%*%inv_Gamma3[,1:pA]%*%(t(Gamma2A)[1:pA,])
+        Cov_U1theta=(1/n_main)*crossprod(X*c(mu_X_beta-y),XR*c(mu_XR_theta-y))%*%(inv_GammaXRXR[,1:pA]%*%t(GammaZA))
+        Cov_U2theta=(1/n_main)*crossprod(Z*c(mu_X_beta-mu_XR_theta),XR*c(mu_XR_theta-y))%*%(inv_GammaXRXR[,1:pA]%*%t(GammaZA))
 
-        Delta22 = Delta22 + Gamma2A%*%(n_main*V_thetaA)%*%t(Gamma2A)
+        Delta22 = Delta22 + GammaZA%*%(n_main*V_thetaA)%*%t(GammaZA)
         + Cov_U2theta+t(Cov_U2theta)
         Delta12 = Delta12 + Cov_U1theta
     }
