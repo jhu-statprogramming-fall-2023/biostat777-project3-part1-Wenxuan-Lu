@@ -2,34 +2,31 @@ mu_func<-function(x,family){
     if(family=='gaussian'){return(x)}
     else if(family=='binomial'){return(expit(x))}
 }
-mu_prime_func<-function(x,family){
-    if(family=='gaussian'){return(1)}
-    else if(family=='binomial'){return(expit(x)*(1-expit(x)))}
-}
 Delta_opt<-function(y,Z,W,family,
                     study_info,A=NULL,pA=NULL,
                     beta=NULL,hat_thetaA=NULL,
                     V_thetaA=NULL){
     X=cbind(A,Z,W)
     XR=cbind(A,Z)
-    n_main=nrow(Z)
+    n_main=length(y)
     tilde_thetaZ=study_info[[1]]$Coeff
     tilde_theta=c(hat_thetaA,tilde_thetaZ)
-    mu_X_beta=mu_func(X%*%beta,family)
+    mu_X_beta=mu_func(X%*%beta,family) # check
     mu_XR_theta=mu_func(XR%*%tilde_theta,family)
+    mu_prime_XR_theta=mu_XR_theta*(1-mu_XR_theta)
     V_U1=(1/n_main)*crossprod(X*c(mu_X_beta-y))
     V_U2=(1/n_main)*crossprod(Z*c(mu_X_beta-mu_XR_theta))
     Cov_U1U2=(1/n_main)*crossprod(X*c(mu_X_beta-y),Z*c(mu_X_beta-mu_XR_theta))
-    Gamma2Z=(1/n_main)*crossprod(Z*c(mu_prime_func(mu_XR_theta,family)),Z)
+    Gamma2Z=(1/n_main)*crossprod(Z*c(mu_prime_XR_theta),Z)
     V_thetaZ=study_info[[1]]$Covariance
     Delta22=V_U2 +Gamma2Z%*%(n_main*V_thetaZ)%*%t(Gamma2Z)
     Delta12=Cov_U1U2
     if(pA!=0){
-        Gamma2A=(1/n_main)*crossprod(Z*c(mu_prime_func(mu_XR_theta,family)),A)
-        inv_Gamma3=ginv((1/n_main)*crossprod(XR*c(mu_prime_func(mu_XR_theta,family)),XR))
+        Gamma2A=(1/n_main)*crossprod(Z*c(mu_prime_XR_theta),A)
+        inv_Gamma3=ginv((1/n_main)*crossprod(XR*c(mu_prime_XR_theta),XR))
         #print(V_thetaA)
-        #print((1/n_main)*inv_Gamma3[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_func(mu_XR_theta,family)-y)) )%*%inv_Gamma3[,1:pA])
-        #V_thetaA = (1/n_main)*inv_Gamma3[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_func(mu_XR_theta,family)-y)) )%*%inv_Gamma3[,1:pA]
+        #print((1/n_main)*inv_Gamma3[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_XR_theta-y)) )%*%inv_Gamma3[,1:pA])
+        #V_thetaA = (1/n_main)*inv_Gamma3[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_XR_theta-y)) )%*%inv_Gamma3[,1:pA]
 
         Cov_U1theta=(1/n_main)*crossprod(X*c(mu_X_beta-y),XR*c(mu_XR_theta-y))%*%inv_Gamma3[,1:pA]%*%(t(Gamma2A)[1:pA,])
         Cov_U2theta=(1/n_main)*crossprod(Z*c(mu_X_beta-mu_XR_theta),XR*c(mu_XR_theta-y))%*%inv_Gamma3[,1:pA]%*%(t(Gamma2A)[1:pA,])
