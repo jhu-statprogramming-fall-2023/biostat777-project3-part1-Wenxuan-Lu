@@ -16,7 +16,8 @@ Imports:
     caret,
     locfit,
     corpcor,
-    pROC
+    pROC,
+    speedglm
 License: GPL-3
 Encoding: UTF-8
 RoxygenNote: 7.2.1

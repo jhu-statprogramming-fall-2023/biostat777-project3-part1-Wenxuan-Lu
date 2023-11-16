@@ -371,7 +371,11 @@ htlgmm.default<-function(
                 stop("With customized hat_thetaA input, V_thetaA is also needed")
             }
             df=data.frame(y,A,Z)
-            hat_thetaA_glm=glm(y~0+.,data = df,family = family)
+            if(family=="binomial"){
+                hat_thetaA_glm=speedglm(y~0+.,data = df,family = binomial())
+            }else if(family=="gaussian"){
+                hat_thetaA_glm=speedlm(y~0+.,data = df)
+            }
             hat_thetaA=hat_thetaA_glm$coefficients[1:pA]
             V_thetaA=vcov(hat_thetaA_glm)[1:pA,1:pA]
         }
@@ -401,7 +405,11 @@ htlgmm.default<-function(
             if(initial_with_type == "ridge"){initial_alpha=0}else{initial_alpha=1}
             if(initial_with_type == "glm"){
                 df=data.frame(y,X)
-                fit_initial=glm(y~0+.,data = df,family = family)
+                if(family=="binomial"){
+                    fit_initial=speedglm(y~0+.,data = df,family = binomial())
+                }else if(family=="gaussian"){
+                    fit_initial=speedlm(y~0+.,data = df)
+                }
                 beta_initial=fit_initial$coefficients
             }else if(pA == 0){
                 fit_initial=cv.glmnet(x=X,y= y,

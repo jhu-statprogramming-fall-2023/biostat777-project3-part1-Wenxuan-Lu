@@ -65,6 +65,7 @@
 #' @importFrom corpcor fast.svd
 #' @importFrom magic adiag
 #' @importFrom MASS ginv
+#' @importFrom speedglm speedglm
 #' @export
 #'
 #'
@@ -198,6 +199,7 @@ htlgmm<-function(
 #' @importFrom magic adiag
 #' @importFrom MASS ginv
 #' @importFrom pROC auc
+#' @importFrom speedglm speedglm
 #' @export
 #'
 #'
