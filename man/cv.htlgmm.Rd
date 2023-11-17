@@ -54,7 +54,7 @@ If 'penalty_type = 'none' ', we use without penalty. (For continuous y, we use o
 \item{family}{The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".}
 
 \item{initial_with_type}{Get initial estimation for beta using main study data only
-by cross validation using penalty regression, chosen from c("ridge","lasso") or by GLM, chosen from c("glm"). The default is "ridge". If penalty_type = 'glm',
+by cross validation using penalty regression, chosen from c("ridge","lasso","glm"). The default is "ridge". If penalty_type = 'glm',
 for continuous y, we use ordinary least square, and for binary y, we use logistic regression without penalty.)}
 
 \item{beta_initial}{The initial estimation for beta if a consistent estimator is available.

@@ -21,7 +21,7 @@
 #' If 'penalty_type = 'none' ', we use without penalty. (For continuous y, we use ordinary least square, and for binary y, we use logistic regression without penalty.)
 #' @param family The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".
 #' @param initial_with_type Get initial estimation for beta using main study data only
-#' by cross validation using penalty regression, chosen from c("ridge","lasso") or by GLM, chosen from c("glm"). The default is "ridge". If penalty_type = 'glm',
+#' by cross validation using (penalty) regression, chosen from c("ridge","lasso","glm"). The default is "ridge". If penalty_type = 'glm',
 #' for continuous y, we use ordinary least square, and for binary y, we use logistic regression without penalty.)
 #' @param beta_initial The initial estimation for beta if a consistent estimator is available.
 #' E.g., one may input htlgmm result as beta_initial for more rounds to refine the final estimation.
@@ -65,7 +65,7 @@
 #' @importFrom corpcor fast.svd
 #' @importFrom magic adiag
 #' @importFrom MASS ginv
-#' @importFrom speedglm speedglm
+#' @importFrom speedglm speedglm speedlm
 #' @export
 #'
 #'
@@ -142,7 +142,7 @@ htlgmm<-function(
 #' If 'penalty_type = 'none' ', we use without penalty. (For continuous y, we use ordinary least square, and for binary y, we use logistic regression without penalty.)
 #' @param family The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".
 #' @param initial_with_type Get initial estimation for beta using main study data only
-#' by cross validation using penalty regression, chosen from c("ridge","lasso") or by GLM, chosen from c("glm"). The default is "ridge". If penalty_type = 'glm',
+#' by cross validation using penalty regression, chosen from c("ridge","lasso","glm"). The default is "ridge". If penalty_type = 'glm',
 #' for continuous y, we use ordinary least square, and for binary y, we use logistic regression without penalty.)
 #' @param beta_initial The initial estimation for beta if a consistent estimator is available.
 #' E.g., one may input htlgmm result as beta_initial for more rounds to refine the final estimation.
@@ -199,7 +199,7 @@ htlgmm<-function(
 #' @importFrom magic adiag
 #' @importFrom MASS ginv
 #' @importFrom pROC auc
-#' @importFrom speedglm speedglm
+#' @importFrom speedglm speedglm speedlm
 #' @export
 #'
 #'

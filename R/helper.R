@@ -82,17 +82,17 @@ cv_mse_lambda_func<-function(index_fold,Z,W,A,y,
                              pseudo_Xy){
     fold_mse_lambda<-sapply(1:length(index_fold), function(cur_fold){
         index_test<-index_fold[[cur_fold]]
-        Ztrain<-Z[-index_test,]
-        Ztest<-Z[index_test,]
+        Ztrain<-Z[-index_test,,drop=FALSE]
+        Ztest<-Z[index_test,,drop=FALSE]
         if(!is.null(W)){
-            Wtrain<-W[-index_test,]
-            Wtest<-W[index_test,]
+            Wtrain<-W[-index_test,,drop=FALSE]
+            Wtest<-W[index_test,,drop=FALSE]
         }else{
             Wtrain<-NULL
             Wtest<-NULL}
         if(!is.null(A)){
-            Atrain<-A[-index_test,]
-            Atest<-A[index_test,]
+            Atrain<-A[-index_test,,drop=FALSE]
+            Atest<-A[index_test,,drop=FALSE]
         }else{
             Atrain<-NULL
             Atest<-NULL}
@@ -126,17 +126,17 @@ cv_mse_lambda_ratio_func<-function(index_fold,Z,W,A,y,
                                    pseudo_Xy){
     fold_mse_lambda_ratio<-lapply(1:length(index_fold), function(cur_fold){
         index_test<-index_fold[[cur_fold]]
-        Ztrain<-Z[-index_test,]
-        Ztest<-Z[index_test,]
+        Ztrain<-Z[-index_test,,drop=FALSE]
+        Ztest<-Z[index_test,,drop=FALSE]
         if(!is.null(W)){
-            Wtrain<-W[-index_test,]
-            Wtest<-W[index_test,]
+            Wtrain<-W[-index_test,,drop=FALSE]
+            Wtest<-W[index_test,,drop=FALSE]
         }else{
             Wtrain<-NULL
             Wtest<-NULL}
         if(!is.null(A)){
-            Atrain<-A[-index_test,]
-            Atest<-A[index_test,]
+            Atrain<-A[-index_test,,drop=FALSE]
+            Atest<-A[index_test,,drop=FALSE]
         }else{
             Atrain<-NULL
             Atest<-NULL}
@@ -175,17 +175,17 @@ cv_dev_lambda_func<-function(index_fold,Z,W,A,y,
                              pseudo_Xy){
     dev_fold<-lapply(1:length(index_fold), function(cur_fold){
         index_test<-index_fold[[cur_fold]]
-        Ztrain<-Z[-index_test,]
-        Ztest<-Z[index_test,]
+        Ztrain<-Z[-index_test,,drop=FALSE]
+        Ztest<-Z[index_test,,drop=FALSE]
         if(!is.null(W)){
-            Wtrain<-W[-index_test,]
-            Wtest<-W[index_test,]
+            Wtrain<-W[-index_test,,drop=FALSE]
+            Wtest<-W[index_test,,drop=FALSE]
         }else{
             Wtrain<-NULL
             Wtest<-NULL}
         if(!is.null(A)){
-            Atrain<-A[-index_test,]
-            Atest<-A[index_test,]
+            Atrain<-A[-index_test,,drop=FALSE]
+            Atest<-A[index_test,,drop=FALSE]
         }else{
             Atrain<-NULL
             Atest<-NULL}
@@ -223,17 +223,17 @@ cv_dev_lambda_ratio_func<-function(index_fold,Z,W,A,y,
                                    pseudo_Xy){
     dev_lam_ratio<-lapply(1:length(index_fold), function(cur_fold){
         index_test<-index_fold[[cur_fold]]
-        Ztrain<-Z[-index_test,]
-        Ztest<-Z[index_test,]
+        Ztrain<-Z[-index_test,,drop=FALSE]
+        Ztest<-Z[index_test,,drop=FALSE]
         if(!is.null(W)){
-            Wtrain<-W[-index_test,]
-            Wtest<-W[index_test,]
+            Wtrain<-W[-index_test,,drop=FALSE]
+            Wtest<-W[index_test,,drop=FALSE]
         }else{
             Wtrain<-NULL
             Wtest<-NULL}
         if(!is.null(A)){
-            Atrain<-A[-index_test,]
-            Atest<-A[index_test,]
+            Atrain<-A[-index_test,,drop=FALSE]
+            Atest<-A[index_test,,drop=FALSE]
         }else{
             Atrain<-NULL
             Atest<-NULL}
@@ -308,6 +308,10 @@ htlgmm.default<-function(
     }
     if(!type_measure%in% c("default", "mse", "deviance", "auc")){
         stop("Select type_measure from c('default','deviance','auc')")
+    }
+    if(is.null(dim(Z)[1])){
+        warning("Z is input as a vector, convert Z into matrix with size nZ*1")
+        Z=matrix(Z,ncol=1)
     }
     final_alpha = 1
     if(penalty_type == "ridge"){final_alpha = 0}
