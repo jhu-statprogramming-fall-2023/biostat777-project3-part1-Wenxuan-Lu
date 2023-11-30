@@ -16,6 +16,8 @@ htlgmm(
   beta_initial = NULL,
   hat_thetaA = NULL,
   V_thetaA = NULL,
+  use_offset = TRUE,
+  V_thetaA_sandwich = TRUE,
   remove_penalty_Z = FALSE,
   remove_penalty_W = FALSE,
   inference = TRUE,
@@ -59,6 +61,10 @@ The default is NULL, and main study is used for initial estimation according to 
 \item{hat_thetaA}{If A is not NULL, one can provide hat_thetaA as the input. If 'hat_thetaA = NULL', we estimate hat_thetaA with glm by main study.}
 
 \item{V_thetaA}{If A is not NULL, one can provide V_thetaA as the input. If 'V_thetaA = NULL', we estimate V_thetaA with glm by main study.}
+
+\item{use_offset}{Wethert to use offset regarding the external model estimated coefficient. The default is TRUE.}
+
+\item{V_thetaA_sandwich}{Whether to apply sandwich formula to compute the variance-covariance matrix if hat_thetaA.The default is TRUE.}
 
 \item{remove_penalty_Z}{Not penalize Z if it is TRUE. The default is FALSE.}
 

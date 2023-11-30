@@ -28,6 +28,8 @@
 #' The default is NULL, and main study is used for initial estimation according to 'initial_with_type'.
 #' @param hat_thetaA If A is not NULL, one can provide hat_thetaA as the input. If 'hat_thetaA = NULL', we estimate hat_thetaA with glm by main study.
 #' @param V_thetaA If A is not NULL, one can provide V_thetaA as the input. If 'V_thetaA = NULL', we estimate V_thetaA with glm by main study.
+#' @param use_offset Wethert to use offset regarding the external model estimated coefficient. The default is TRUE.
+#' @param V_thetaA_sandwich Whether to apply sandwich formula to compute the variance-covariance matrix if hat_thetaA.The default is TRUE.
 #' @param remove_penalty_Z Not penalize Z if it is TRUE. The default is FALSE.
 #' @param remove_penalty_W Not penalize W if it is TRUE. The default is FALSE.
 #' @param inference Whether to do inference without penalty or post-selection inference with adaptive lasso penalty. The default is TRUE.
@@ -80,6 +82,8 @@ htlgmm<-function(
         beta_initial = NULL,
         hat_thetaA = NULL,
         V_thetaA = NULL,
+        use_offset = TRUE,
+        V_thetaA_sandwich = TRUE,
         remove_penalty_Z = FALSE,
         remove_penalty_W = FALSE,
         inference = TRUE,
@@ -107,7 +111,8 @@ htlgmm<-function(
     type_measure = "default"
     res<-htlgmm.default(y,Z,W,study_info,A,penalty_type,
                         family,initial_with_type,beta_initial,
-                        hat_thetaA,V_thetaA,remove_penalty_Z,
+                        hat_thetaA,V_thetaA,use_offset,
+                        V_thetaA_sandwich,remove_penalty_Z,
                         remove_penalty_W,inference,use_cv,
                         type_measure,nfolds,fix_lambda,
                         lambda_list,tune_ratio,fix_ratio,
@@ -149,6 +154,8 @@ htlgmm<-function(
 #' The default is NULL, and main study is used for initial estimation according to 'initial_with_type'.
 #' @param hat_thetaA If A is not NULL, one can provide hat_thetaA as the input. If 'hat_thetaA = NULL', we estimate hat_thetaA with glm by main study.
 #' @param V_thetaA If A is not NULL, one can provide V_thetaA as the input. If 'V_thetaA = NULL', we estimate V_thetaA with glm by main study.
+#' @param use_offset Wethert to use offset regarding the external model estimated coefficient. The default is TRUE.
+#' @param V_thetaA_sandwich Whether to apply sandwich formula to compute the variance-covariance matrix if hat_thetaA.The default is TRUE.
 #' @param remove_penalty_Z Not penalize Z if it is TRUE. The default is FALSE.
 #' @param remove_penalty_W Not penalize W if it is TRUE. The default is FALSE.
 #' @param inference Whether to do inference without penalty or post-selection inference with adaptive lasso penalty. The default is TRUE.
@@ -213,6 +220,8 @@ cv.htlgmm<-function(
         beta_initial = NULL,
         hat_thetaA = NULL,
         V_thetaA = NULL,
+        use_offset = TRUE,
+        V_thetaA_sandwich = TRUE,
         remove_penalty_Z = FALSE,
         remove_penalty_W = FALSE,
         inference = TRUE,
@@ -240,7 +249,8 @@ cv.htlgmm<-function(
 
     res<-htlgmm.default(y,Z,W,study_info,A,penalty_type,
                         family,initial_with_type,beta_initial,
-                        hat_thetaA,V_thetaA,remove_penalty_Z,
+                        hat_thetaA,V_thetaA,use_offset,
+                        V_thetaA_sandwich,remove_penalty_Z,
                         remove_penalty_W,inference,use_cv,
                         type_measure,nfolds,fix_lambda,
                         lambda_list,tune_ratio,fix_ratio,

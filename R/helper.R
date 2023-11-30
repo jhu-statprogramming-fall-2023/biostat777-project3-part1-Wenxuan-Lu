@@ -5,7 +5,7 @@ mu_func<-function(x,family){
 Delta_opt<-function(y,Z,W,family,
                     study_info,A=NULL,pA=NULL,
                     beta=NULL,hat_thetaA=NULL,
-                    V_thetaA=NULL){
+                    V_thetaA=NULL,use_offset=TRUE){
     X=cbind(A,Z,W)
     XR=cbind(A,Z)
     n_main=length(y)
@@ -13,7 +13,8 @@ Delta_opt<-function(y,Z,W,family,
     tilde_theta=c(hat_thetaA,tilde_thetaZ)
     mu_X_beta=mu_func(X%*%beta,family) # check
     mu_XR_theta=mu_func(XR%*%tilde_theta,family)
-    mu_prime_XR_theta=mu_XR_theta*(1-mu_XR_theta)
+    if(family == "binomial"){mu_prime_XR_theta=mu_XR_theta*(1-mu_XR_theta)}
+    else{mu_prime_XR_theta=1}
     V_U1=(1/n_main)*crossprod(X*c(mu_X_beta-y))
     V_U2=(1/n_main)*crossprod(Z*c(mu_X_beta-mu_XR_theta))
     Cov_U1U2=(1/n_main)*crossprod(X*c(mu_X_beta-y),Z*c(mu_X_beta-mu_XR_theta))
@@ -23,13 +24,17 @@ Delta_opt<-function(y,Z,W,family,
     Delta12=Cov_U1U2
     if(pA!=0){
         GammaZA=(1/n_main)*crossprod(Z*c(mu_prime_XR_theta),A)
-        inv_GammaXRXR=ginv((1/n_main)*crossprod(XR*c(mu_prime_XR_theta),XR))
-        #print(V_thetaA)
-        #print((1/n_main)*inv_GammaXRXR[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_XR_theta-y)) )%*%inv_GammaXRXR[,1:pA])
-        #V_thetaA = (1/n_main)*inv_GammaXRXR[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_XR_theta-y)) )%*%inv_GammaXRXR[,1:pA]
-
-        Cov_U1theta=(1/n_main)*crossprod(X*c(mu_X_beta-y),XR*c(mu_XR_theta-y))%*%(inv_GammaXRXR[,1:pA]%*%t(GammaZA))
-        Cov_U2theta=(1/n_main)*crossprod(Z*c(mu_X_beta-mu_XR_theta),XR*c(mu_XR_theta-y))%*%(inv_GammaXRXR[,1:pA]%*%t(GammaZA))
+        if(use_offset){
+          inv_GammaAA=ginv((1/n_main)*crossprod(A*c(mu_prime_XR_theta),A))
+          #V_thetaA = (1/n_main)*inv_GammaAA%*%((1/n_main)* crossprod(A*c(mu_XR_theta-y)) )%*%inv_GammaAA
+          Cov_U1theta=(1/n_main)*crossprod(X*c(mu_X_beta-y),A*c(mu_XR_theta-y))%*%(inv_GammaAA%*%t(GammaZA))
+          Cov_U2theta=(1/n_main)*crossprod(Z*c(mu_X_beta-mu_XR_theta),A*c(mu_XR_theta-y))%*%(inv_GammaAA%*%t(GammaZA))
+        }else{
+          inv_GammaXRXR=ginv((1/n_main)*crossprod(XR*c(mu_prime_XR_theta),XR))
+          #V_thetaA = (1/n_main)*inv_GammaXRXR[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_XR_theta-y)) )%*%inv_GammaXRXR[,1:pA]
+          Cov_U1theta=(1/n_main)*crossprod(X*c(mu_X_beta-y),XR*c(mu_XR_theta-y))%*%(inv_GammaXRXR[,1:pA]%*%t(GammaZA))
+          Cov_U2theta=(1/n_main)*crossprod(Z*c(mu_X_beta-mu_XR_theta),XR*c(mu_XR_theta-y))%*%(inv_GammaXRXR[,1:pA]%*%t(GammaZA))
+        }
 
         Delta22 = Delta22 + GammaZA%*%(n_main*V_thetaA)%*%t(GammaZA)
         + Cov_U2theta+t(Cov_U2theta)
@@ -40,6 +45,23 @@ Delta_opt<-function(y,Z,W,family,
     Delta
 }
 
+vcov_sandwich<-function(y,A,Z,family,study_info,pA,
+                        hat_thetaA,use_offset){
+    n_main = length(y)
+    XR = cbind(A,Z)
+    tilde_thetaZ=study_info[[1]]$Coeff
+    tilde_theta=c(hat_thetaA,tilde_thetaZ)
+    mu_XR_theta=mu_func(cbind(A,Z)%*%tilde_theta,family)
+    if(family == "binomial"){mu_prime_XR_theta=mu_XR_theta*(1-mu_XR_theta)}
+    else{mu_prime_XR_theta=1}
+    if(use_offset){
+        inv_GammaAA=ginv((1/n_main)*crossprod(A*c(mu_prime_XR_theta),A))
+        V_thetaA = (1/n_main)*inv_GammaAA%*%((1/n_main)* crossprod(A*c(mu_XR_theta-y)) )%*%inv_GammaAA
+    }else{
+        inv_GammaXRXR=ginv((1/n_main)*crossprod(XR*c(mu_prime_XR_theta),XR))
+        V_thetaA = (1/n_main)*inv_GammaXRXR[1:pA,]%*%((1/n_main)* crossprod(XR*c(mu_XR_theta-y)) )%*%inv_GammaXRXR[,1:pA]
+    }
+}
 pseudo_Xy_gaussian<-function(
         C_half,Z,W,A,y,beta=NULL,hat_thetaA=NULL,study_info=NULL){
     tilde_thetaZ=study_info[[1]]$Coeff
@@ -67,8 +89,6 @@ pseudo_Xy_binomial<-function(
     pseudo_y= -C_half%*%c(u1,u2) + c(pseudo_X%*%beta)
     list("pseudo_X"=pseudo_X,"pseudo_y"=pseudo_y)
 }
-
-
 
 
 
@@ -286,6 +306,8 @@ htlgmm.default<-function(
         beta_initial = NULL,
         hat_thetaA = NULL,
         V_thetaA = NULL,
+        use_offset = TRUE,
+        V_thetaA_sandwich = TRUE,
         remove_penalty_Z = FALSE,
         remove_penalty_W = FALSE,
         inference = TRUE,
@@ -374,14 +396,33 @@ htlgmm.default<-function(
             if(!is.null(V_thetaA)){
                 stop("With customized hat_thetaA input, V_thetaA is also needed")
             }
-            df=data.frame(y,A,Z)
-            if(family=="binomial"){
-                hat_thetaA_glm=speedglm(y~0+.,data = df,family = binomial())
-            }else if(family=="gaussian"){
-                hat_thetaA_glm=speedlm(y~0+.,data = df)
+            if(use_offset){
+                offset_term = c(Z%*%study_info[[1]]$Coeff)
+                df=data.frame(y,A)
+                if(family=="binomial"){
+                    hat_thetaA_glm=speedglm(y~0+.,data = df,offset = offset_term,family = binomial())
+                }else if(family=="gaussian"){
+                    hat_thetaA_glm=speedlm(y~0+.,data = df,offset = offset_term)
+                    hat_thetaA_glm=lm(y~0+.,data = df,offset = offset_term)
+                }
+                hat_thetaA=hat_thetaA_glm$coefficients
+                if(V_thetaA_sandwich){
+                    V_thetaA=vcov_sandwich(y,A,Z,family,study_info,pA,
+                                           hat_thetaA,use_offset)
+                }else{V_thetaA=vcov(hat_thetaA_glm)}
+            }else{
+                df=data.frame(y,A,Z)
+                if(family=="binomial"){
+                    hat_thetaA_glm=speedglm(y~0+.,data = df,family = binomial())
+                }else if(family=="gaussian"){
+                    hat_thetaA_glm=speedlm(y~0+.,data = df)
+                }
+                hat_thetaA=hat_thetaA_glm$coefficients[1:pA]
+                if(V_thetaA_sandwich){
+                    V_thetaA=vcov_sandwich(y,A,Z,family,study_info,pA,
+                                           hat_thetaA,use_offset)
+                }else{V_thetaA=vcov(hat_thetaA_glm)[1:pA,1:pA]}
             }
-            hat_thetaA=hat_thetaA_glm$coefficients[1:pA]
-            V_thetaA=vcov(hat_thetaA_glm)[1:pA,1:pA]
         }
     }
 
