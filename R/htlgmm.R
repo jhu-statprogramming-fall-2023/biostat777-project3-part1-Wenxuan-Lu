@@ -103,13 +103,11 @@ htlgmm<-function(
     if(is.null(dim(A)[1])){
     if(length(A)==1){
     if(A=='default'){if(family == "gaussian"){A=NULL}else{A=1}}else{
-    if(!is.null(A)){
-        if(A!=1){warnings("If A is not a matrix, A should be selected from c('default',NULL,1),")}}
-    }
-    }else{
+        if(!is.null(A)){
+            if(A!=1){warnings("If A is not a matrix, A should be selected from c('default',NULL,1).")}}
+    }}else{
         warnings("If A is not selected from c('default',NULL,1), A must be a matrix.")
-    }
-    }
+    }}
     use_cv = FALSE
     nfolds = 10
     tune_ratio = FALSE
@@ -249,10 +247,13 @@ cv.htlgmm<-function(
     }
 
     if(is.null(dim(A)[1])){
-        if(length(A)==1){
-            if(A=='default'){if(family == "gaussian"){A=NULL}else{A=1}}
-        }
-    }
+    if(length(A)==1){
+    if(A=='default'){if(family == "gaussian"){A=NULL}else{A=1}}else{
+        if(!is.null(A)){
+            if(A!=1){warnings("If A is not a matrix, A should be selected from c('default',NULL,1).")}}
+    }}else{
+        warnings("If A is not selected from c('default',NULL,1), A must be a matrix.")
+    }}
 
     res<-htlgmm.default(y,Z,W,study_info,A,penalty_type,
                         family,initial_with_type,beta_initial,
