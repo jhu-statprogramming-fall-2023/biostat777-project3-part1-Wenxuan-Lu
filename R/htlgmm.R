@@ -7,12 +7,13 @@
 #'
 #' @details htlgmm: Heterogeneous Transfer Learning via generalized method of moments(GMM).
 #'
-#' @param y The variable of interest, which can be continuouse or binary.
+#' @param y The variable of interest, which can be continuous or binary.
 #' @param Z The overlapping features in both main and external studies.
 #' @param W The unmatched features only in main study, the default is NULL.
 #' @param study_info The trained model from external study, including estimate coefficients, estimated variance-covariance matrix and sample size.
 #' The 'study_info' is in the format of list. The first item is 'Coeff', the second iterm is 'Covariance', and the third item is 'Sample_size'.
 #' @param A The covariates for study-specific adjustment. The default is 'default', which is 'NULL' for 'gaussian' family, '1' for 'binomial' family.
+#' Other than c('default',NULL,1), A must be a matrix whose dimension is the same as the sample dimension or Z and W.
 #' For continuous variable, we suggest scaling the features Z, W to eliminate intercept term.  If 'A = NULL', there is no intercept term included.
 #' For binary variable, we use intercept term by 'A=1' to adjust for different binary trait ratios in main and external studies.
 #' If there is only intercept term in A, we use 'A=1'.
@@ -28,7 +29,7 @@
 #' The default is NULL, and main study is used for initial estimation according to 'initial_with_type'.
 #' @param hat_thetaA If A is not NULL, one can provide hat_thetaA as the input. If 'hat_thetaA = NULL', we estimate hat_thetaA with glm by main study.
 #' @param V_thetaA If A is not NULL, one can provide V_thetaA as the input. If 'V_thetaA = NULL', we estimate V_thetaA with glm by main study.
-#' @param use_offset Wethert to use offset regarding the external model estimated coefficient. The default is TRUE.
+#' @param use_offset Whether to use offset regarding the external model estimated coefficient. The default is TRUE.
 #' @param V_thetaA_sandwich Whether to apply sandwich formula to compute the variance-covariance matrix if hat_thetaA.The default is TRUE.
 #' @param remove_penalty_Z Not penalize Z if it is TRUE. The default is FALSE.
 #' @param remove_penalty_W Not penalize W if it is TRUE. The default is FALSE.
@@ -100,9 +101,14 @@ htlgmm<-function(
     }
 
     if(is.null(dim(A)[1])){
-        if(length(A)==1){
-            if(A=='default'){if(family == "gaussian"){A=NULL}else{A=1}}
-        }
+    if(length(A)==1){
+    if(A=='default'){if(family == "gaussian"){A=NULL}else{A=1}}else{
+    if(!is.null(A)){
+        if(A!=1){warnings("If A is not a matrix, A should be selected from c('default',NULL,1),")}}
+    }
+    }else{
+        warnings("If A is not selected from c('default',NULL,1), A must be a matrix.")
+    }
     }
     use_cv = FALSE
     nfolds = 10
@@ -133,12 +139,13 @@ htlgmm<-function(
 #'
 #' @details Cross validation for htlgmm.
 #'
-#' @param y The variable of interest, which can be continuouse or binary.
+#' @param y The variable of interest, which can be continuous or binary.
 #' @param Z The overlapping features in both main and external studies.
 #' @param W The unmatched features only in main study, the default is NULL.
 #' @param study_info The trained model from external study, including estimate coefficients, estimated variance-covariance matrix and sample size.
 #' The 'study_info' is in the format of list. The first item is 'Coeff', the second iterm is 'Covariance', and the third item is 'Sample_size'.
 #' @param A The covariates for study-specific adjustment. The default is 'default', which is 'NULL' for 'gaussian' family, '1' for 'binomial' family.
+#' Other than c('default',NULL,1), A must be a matrix whose dimension is the same as the sample dimension or Z and W.
 #' For continuous variable, we suggest scaling the features Z, W to eliminate intercept term.  If 'A = NULL', there is no intercept term included.
 #' For binary variable, we use intercept term by 'A=1' to adjust for different binary trait ratios in main and external studies.
 #' If there is only intercept term in A, we use 'A=1'.
@@ -154,7 +161,7 @@ htlgmm<-function(
 #' The default is NULL, and main study is used for initial estimation according to 'initial_with_type'.
 #' @param hat_thetaA If A is not NULL, one can provide hat_thetaA as the input. If 'hat_thetaA = NULL', we estimate hat_thetaA with glm by main study.
 #' @param V_thetaA If A is not NULL, one can provide V_thetaA as the input. If 'V_thetaA = NULL', we estimate V_thetaA with glm by main study.
-#' @param use_offset Wethert to use offset regarding the external model estimated coefficient. The default is TRUE.
+#' @param use_offset Whether to use offset regarding the external model estimated coefficient. The default is TRUE.
 #' @param V_thetaA_sandwich Whether to apply sandwich formula to compute the variance-covariance matrix if hat_thetaA.The default is TRUE.
 #' @param remove_penalty_Z Not penalize Z if it is TRUE. The default is FALSE.
 #' @param remove_penalty_W Not penalize W if it is TRUE. The default is FALSE.

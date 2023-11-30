@@ -373,8 +373,10 @@ htlgmm.default<-function(
         if(is.null(Acolnames[1])){
             Acolnames=paste0('A',1:pA)
         }
-        if(unique(A[,1]) == 1){
-            Acolnames[1]='intercept'
+        if(length(unique(A[,1])) == 1){
+            if(unique(A[,1]) == 1){
+                Acolnames[1]='intercept'
+            }
         }
         colnames(A)=Acolnames
     }

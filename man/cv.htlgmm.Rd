@@ -35,7 +35,7 @@ cv.htlgmm(
 )
 }
 \arguments{
-\item{y}{The variable of interest, which can be continuouse or binary.}
+\item{y}{The variable of interest, which can be continuous or binary.}
 
 \item{Z}{The overlapping features in both main and external studies.}
 
@@ -45,6 +45,7 @@ cv.htlgmm(
 The 'study_info' is in the format of list. The first item is 'Coeff', the second iterm is 'Covariance', and the third item is 'Sample_size'.}
 
 \item{A}{The covariates for study-specific adjustment. The default is 'default', which is 'NULL' for 'gaussian' family, '1' for 'binomial' family.
+Other than c('default',NULL,1), A must be a matrix whose dimension is the same as the sample dimension or Z and W.
 For continuous variable, we suggest scaling the features Z, W to eliminate intercept term.  If 'A = NULL', there is no intercept term included.
 For binary variable, we use intercept term by 'A=1' to adjust for different binary trait ratios in main and external studies.
 If there is only intercept term in A, we use 'A=1'.
@@ -67,7 +68,7 @@ The default is NULL, and main study is used for initial estimation according to 
 
 \item{V_thetaA}{If A is not NULL, one can provide V_thetaA as the input. If 'V_thetaA = NULL', we estimate V_thetaA with glm by main study.}
 
-\item{use_offset}{Wethert to use offset regarding the external model estimated coefficient. The default is TRUE.}
+\item{use_offset}{Whether to use offset regarding the external model estimated coefficient. The default is TRUE.}
 
 \item{V_thetaA_sandwich}{Whether to apply sandwich formula to compute the variance-covariance matrix if hat_thetaA.The default is TRUE.}
 
