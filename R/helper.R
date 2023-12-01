@@ -464,16 +464,24 @@ htlgmm.default<-function(
                                       penalty.factor = fix_penalty,
                                       family=family)
                 beta_initial=c(coef.glmnet(fit_initial,s="lambda.min")[-1])
-            }else if(unique(A[,1])==1){
-                fit_initial=cv.glmnet(x=X[,-1],y=y,
-                                      alpha = initial_alpha,
-                                      penalty.factor = fix_penalty[-1],
-                                      family=family)
-                beta_initial=as.vector(coef.glmnet(fit_initial,s="lambda.min"))
+            }else if(length(unique(A[,1]))==1){
+                if(unique(A[,1])==1){
+                    fit_initial=cv.glmnet(x=X[,-1],y=y,
+                                          alpha = initial_alpha,
+                                          penalty.factor = fix_penalty[-1],
+                                          family=family)
+                    beta_initial=as.vector(coef.glmnet(fit_initial,s="lambda.min"))
+                }else{
+                    stop("The first column of A is constant, then it should be 1 for intercept.")
+                }
             }else{
-                stop("With A, the first column of A should be 1 for intercept.")
+                fit_initial=cv.glmnet(x=X,y= y,
+                                      alpha = initial_alpha,
+                                      penalty.factor = fix_penalty,
+                                      family=family)
+                beta_initial=c(coef.glmnet(fit_initial,s="lambda.min")[-1])
             }
-        }else{stop("Select Initial Type from c('ridge','lasso')")}
+        }else{stop("Select Initial Type from c('glm','ridge','lasso')")}
     }
     if (penalty_type == "adaptivelasso"){
         w_adaptive<-1/abs(beta_initial)^gamma_adaptivelasso
@@ -545,6 +553,7 @@ htlgmm.default<-function(
                                               lambda = lambda_list)
                 return_list<-list("beta"=fit_final_lambda_list$beta,
                                   "lambda_list"=fit_final_lambda_list$lambda)
+                if(inference){warnings("When use_cv=F,fix_lambda is NULL, no inference will be done")}
                 inference=FALSE
             }
             if(!is.null(fix_ratio)){
@@ -625,9 +634,9 @@ htlgmm.default<-function(
                                 "cv_auc"=cv_dev$auc/nfolds))
         }
     }
-
-    index_nonzero<-which(beta!=0)
-    if(inference & length(index_nonzero) > 1){
+    if(inference){
+        index_nonzero<-which(beta!=0)
+    if(length(index_nonzero) > 1){
         if(penalty_type == "lasso"){
             warning("Current penalty is lasso, please turn to adaptivelasso for inference")
         }
@@ -668,6 +677,6 @@ htlgmm.default<-function(
                                      "FDR_adjust_position"=selected_pos,
                                      "FDR_adjust_name"=Xcolnames[selected_pos])
                        ))
-    }
+    }}
     return(return_list)
 }
