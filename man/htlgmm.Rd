@@ -10,9 +10,9 @@ htlgmm(
   W = NULL,
   study_info = NULL,
   A = "default",
-  penalty_type = "lasso",
+  penalty_type = "none",
   family = "gaussian",
-  initial_with_type = "ridge",
+  initial_with_type = "glm",
   beta_initial = NULL,
   hat_thetaA = NULL,
   V_thetaA = NULL,
@@ -46,7 +46,7 @@ For binary variable, we use intercept term by 'A=1' to adjust for different bina
 If there is only intercept term in A, we use 'A=1'.
 A are the features working for adjustment in reduced model, but A is not summarized in summary statistics(input:study_info).}
 
-\item{penalty_type}{The penalty type for htlgmm, chosen from c("none","lasso","adaptivelasso","ridge"). The default is "lasso".
+\item{penalty_type}{The penalty type for htlgmm, chosen from c("none","lasso","adaptivelasso","ridge"). The default is "none".
 If 'penalty_type = 'none' ', we use without penalty. (For continuous y, we use ordinary least square, and for binary y, we use logistic regression without penalty.)}
 
 \item{family}{The family is chosen from c("gaussian","binomial"). Linear regression for "gaussian" and logistic regression for "binomial".}
