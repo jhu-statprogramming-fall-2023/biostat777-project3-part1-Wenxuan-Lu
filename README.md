@@ -1,14 +1,39 @@
-# README
+# htlgmm
 
+The package website is build for project 3 of the class 140.777 Statistical Programming Paradigms and Workflows.
 
+# Pakcage information
 
-Please see the google colab link [https://colab.research.google.com/drive/1TWE3ZT30fY1umL_ILoeC2iwS8oTn66aT?usp=sharing] for tutorial. 
+Original GitHub Repo: [<https://github.com/RuzhangZhao/htlgmm>]
 
-This works for README file for `htlgmm` function. 
+Deployed website: [<https://jhu-statprogramming-fall-2023.github.io/biostat777-project3-part1-Wenxuan-Lu/>]
+
+Author: Ruzhang Zhao (developed the package), Wenxuan Lu (developed the website and made the example analysis)
+
+Goal of the package: Perform hetergeneous transfer learning via generalized method of moments
+
+Exported functions:
+
+ - `htlgmm`: fit a generalized linear model via penalized generalized method of moments
+ - `htlgmm.cv`: perform k-fold cross validation for `htlgmm`
+
+# Website Customization
+
+1. Use the bootswatch spacelab theme.
+2. Change the font of text and headings through bslib variables.
+3. Change the syntax highlighting color to breeze-light in code blocks.
+4. Add the link of the original GitHub repository to the sidebar.
+5. Change the background color used for inline code.
+
+# Example usage
+
+Please see the google colab link [<https://colab.research.google.com/drive/1TWE3ZT30fY1umL_ILoeC2iwS8oTn66aT?usp=sharing>] for tutorial.
+
+This works for README file for `htlgmm` function.
 
 $p_{\mathrm{Z}}=20,p_{\mathrm{W}}=3$
 
-```R
+``` r
 # Simulation Example
 library(htlgmm)
 pZ=20 # overlapping features
@@ -73,9 +98,8 @@ ee_htlgmm<-round(ee_htlgmm,4)
 ee_lasso<-sum((coef-est_coef_glmnet)^2)
 ee_lasso<-round(ee_lasso,4)
 print(paste0("Estimation Error: ","lasso(",ee_lasso,"); htlgmm(",ee_htlgmm,")"))
-
 ```
 
-```R
+``` r
 [1] "Estimation Error: lasso(0.0414); htlgmm(0.0212)"
 ```

@@ -17,7 +17,16 @@ Imports:
     locfit,
     corpcor,
     pROC,
-    speedglm
+    speedglm,
+    tidytuesdayR,
+    tidyr,
+    dplyr,
+    purrr,
+    ggplot2
 License: GPL-3
 Encoding: UTF-8
 RoxygenNote: 7.2.1
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

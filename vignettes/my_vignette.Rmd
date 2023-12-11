@@ -1,0 +1,356 @@
+---
+title: "Example Analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Example Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+The National Football League (NFL) is not just a sport. It's part of the American culture that attracts the attention of the million across the nation. In this analysis, I am going to explore the factors that can influence the weekly attendance and use the lasso regression to predict the weekly attendance. The aiming questions are 
+
+1. Is the home field advantage real? 
+2. If the home field advantage is real, does the number of attendants increase when it is a home game? 
+3. Can we predict the weekly attendance from basic information about both teams?
+
+In addition to this, I will explore in question 3 about how to build the model when our access to data is restricted, and show the usage of the data integration method in package `htlgmm`.
+
+# Dataset
+
+The data set is obtained from package `tidytuesday` from week [2020-02-04](https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-02-04). It is originated from Pro Football Reference [team standings](https://www.pro-football-reference.com/years/2019/index.htm). The data set contains the weekly attendance information for games from 2000 to 2019. It also provides information about each game and the rating of the teams. Please refer to the [data dictionary](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-02-04/readme.md#data-dictionary) for more details.
+
+```{r load libraries, warning=FALSE, message=FALSE, results='hide'}
+# load libraries
+library(htlgmm)
+library(tidytuesdayR)
+library(tidyr)
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(glmnet)
+```
+
+```{r download data, message=FALSE, warning=FALSE}
+# create a data folder if needed
+if (!file.exists("../data")) {
+  dir.create("../data")
+}
+
+# download data from tidytuesday and save it if needed
+if (!file.exists("../data/attendance.rds")) {
+    attendance <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-02-04/attendance.csv')
+    standings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-02-04/standings.csv')
+    games <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-02-04/games.csv')
+    saveRDS(attendance, "../data/attendance.rds")
+    saveRDS(standings, "../data/standings.rds")
+    saveRDS(games, "../data/games.rds")
+}
+```
+
+```{r load data}
+# load the data set
+attendance = as_tibble(readRDS("../data/attendance.rds"))
+standings = as_tibble(readRDS("../data/standings.rds"))
+games = as_tibble(readRDS("../data/games.rds"))
+```
+
+# Q1: Is the home field advantage real?
+
+It is a common saying that the home team has an advantage over the away team. Is the advantage real?
+
+Figure 1 shows the percentage of games won by home teams. Each row corresponds to the distribution of weekly percentage of games won by home teams in a given year. There is a consistent trend that home teams won more games than away games. Figure 2 shows the percentage of points gained by the home teams. Though the points depend on other factors such as competence of the team, home teams typically earn more points, which further confirms the home field advantage. Figure 3 and 4 show that the home field advantage is even larger for the Wild Card round, the Divisional Round, the Conference Championship, and the Super Bowl. 
+
+```{r Q1 generate plot df}
+games["is_home_win"] = map2_int(.x=games$winner, 
+                                .y=games$home_team, 
+                                .f = function(x, y) as.numeric(x==y))
+games["home_pts_percent"] = pmap_dbl(.l=games[c("is_home_win", "pts_win", "pts_loss")], 
+                                     .f=function(is_home_win, pts_win, pts_loss) {
+                                         ifelse(is_home_win, pts_win, pts_loss)/(pts_win + pts_loss)
+                                     })
+to_plot = games %>% 
+    select(year, week, is_home_win, home_pts_percent, home_team_name, away_team_name) %>%
+    mutate(team_name=home_team_name) %>%
+    inner_join(standings[c("year", "team_name", "playoffs")], 
+               by = join_by(year, team_name)) %>%
+    rename(home_playoffs=playoffs) %>%
+    mutate(team_name=away_team_name) %>%
+    inner_join(standings[c("year", "team_name", "playoffs")],
+               by = join_by(year, team_name)) %>%
+    rename(away_playoffs=playoffs) %>%
+    mutate(time=paste0(year, "/", week)) %>%
+    mutate(playoffs=case_when(
+        home_playoffs == "Playoffs" & away_playoffs == "Playoffs" ~ "Both Playoffs",
+        home_playoffs == "Playoffs" & away_playoffs == "No Playoffs" ~ "Home Playoffs",
+        home_playoffs == "No Playoffs" & away_playoffs == "Playoffs" ~ "Away Playoffs",
+        .default = "None Playoffs"
+    )) %>%
+    select(time, year, week, playoffs, is_home_win, home_pts_percent)
+```
+
+
+```{r Q1 plot1, fig.cap="Figure 1: The percentage of wins made by home teams", fig.width=7, fig.height=4}
+plot_df = to_plot %>% 
+    filter(!week %in% c("WildCard", "Division", "ConfChamp", "SuperBowl")) %>%
+    mutate(week = as.numeric(week)) %>%
+    group_by(time, year, week) %>%
+    summarize(is_home_win_avg = mean(is_home_win),
+              home_pts_percent_avg = mean(home_pts_percent),
+              .groups="drop") %>%
+    arrange(year, week) %>%
+    mutate(year = factor(year))
+
+ggplot(data=plot_df, aes(year, is_home_win_avg)) +
+    geom_boxplot(aes(fill=year), show.legend = FALSE) +
+    coord_flip() +
+    labs(title = "The percentage of wins made by home teams", 
+         subtitle = "For each year, the box shows the distribution of the percentage of games won \nby home teams each week",
+         caption = "Data Source: NFL Stadium Attendance (TidyTuesday 2020-02-04)",
+         x = "year",
+         y = "percentage of home wins") + 
+    theme_minimal() +
+    theme(axis.text.y = element_text(angle = 30, hjust = 1, size=6))
+```
+
+```{r Q1 plot 2, fig.cap="Figure 2: The percentage of points made by home teams", fig.width=7, fig.height=4}
+plot_df = to_plot %>% 
+    filter(!week %in% c("WildCard", "Division", "ConfChamp", "SuperBowl")) %>%
+    mutate(year = factor(year))
+
+ggplot(data=plot_df, aes(year, home_pts_percent)) +
+    geom_boxplot(aes(fill=year), show.legend = FALSE) +
+    coord_flip() +
+    labs(title = "The percentage of points made by home teams", 
+         subtitle = "The percentage points made by home teams for each game",
+         caption = "Data Source: NFL Stadium Attendance (TidyTuesday 2020-02-04)",
+         x = "year",
+         y = "percentage of points made by home teams") + 
+    theme_minimal() +
+    theme(axis.text.y = element_text(angle = 30, hjust = 1, size=6))
+```
+
+```{r Q1 plot 3, fig.cap="Figure 3: The percentage of wins made by home teams for each year's Wild Card round, Divisional Round, the Conference Championship, and the Super Bowls", fig.width=7, fig.height=4}
+plot_df = to_plot %>% 
+    filter(week %in% c("WildCard", "Division", "ConfChamp", "SuperBowl")) %>%
+    group_by(year, week) %>%
+    summarize(is_home_win_avg = mean(is_home_win),
+              home_pts_percent_avg = mean(home_pts_percent),
+              .groups="drop")
+
+ggplot(data=plot_df, aes(year, is_home_win_avg)) +
+    geom_line() + geom_point() +
+    facet_wrap(~week, scales="fixed") +
+    labs(title = "The percentage of wins by home teams", 
+         subtitle = "The mean percentage of winning by home teams for each year's \nWild Card round, Divisional Round, the Conference Championship, and the Super Bowls",
+         caption = "Data Source: NFL Stadium Attendance (TidyTuesday 2020-02-04)",
+         x = "year",
+         y = "percentage of home wins") + 
+    theme(axis.text.x = element_text(angle = 30, hjust = 1, size=6))
+```
+
+```{r Q1 plot 4, fig.cap="Figure 4: The percentage of points made by home teams for each year's Wild Card round, Divisional Round, the Conference Championship, and the Super Bowls", fig.width=7, fig.height=4}
+ggplot(data=plot_df, aes(year, home_pts_percent_avg)) +
+    geom_line() + geom_point() +
+    facet_wrap(~week, scales="fixed") +
+    labs(title = "The percentage of points made by home teams", 
+         subtitle = "The mean percentage of points made by home teams for each year's \nWild Card round, Divisional Round, the Conference Championship, and the Super Bowls",
+         caption = "Data Source: NFL Stadium Attendance (TidyTuesday 2020-02-04)",
+         x = "year",
+         y = "percentage of points made by home teams") + 
+    theme(axis.text.x = element_text(angle = 30, hjust = 1, size=6))
+```
+
+# Q2: Does the number of attendants increase when it is a home game?
+
+A home team tends to have more supporters locally. Moreover, due to the home field advantage, more people might come to witness the winning of the home team. Thus, it is reasonable to suspect that the number of attendants for games involving a given team tends to increase when it is a home game. Indeed, the Figure 5 below supports this argument. 
+
+Nevertheless, we can see that the variation in attendance between home game and away game is large, indicating that many other factors also influence the attendance. Thus, when building the regression model in the next section, additional variables that relate to team competence and opponent quality are included.
+
+```{r}
+attendance = filter(attendance, !is.na(attendance$weekly_attendance))
+home_games = games %>% 
+    select(year, week, 
+           home_team_name, home_team_city, is_home_win, 
+           away_team_name, away_team_city) %>%
+    mutate(is_home = 1) %>%
+    rename(is_win = is_home_win, 
+           team_name = home_team_name, team = home_team_city,
+           other_team_name = away_team_name, other_team = away_team_city)
+away_games = games %>% 
+    select(year, week, 
+           away_team_name, away_team_city, is_home_win, 
+           home_team_name, home_team_city) %>%
+    mutate(is_home = 0, is_home_win = 1 - is_home_win) %>%
+    rename(is_win = is_home_win, 
+           team_name = away_team_name, team = away_team_city,
+           other_team_name = home_team_name, other_team = home_team_city)
+is_win_df = rbind(home_games, away_games) %>%
+    filter(!week %in% c("WildCard", "Division", "ConfChamp", "SuperBowl")) %>%
+    mutate(week = as.numeric(week)) %>% 
+    inner_join(attendance[c("year", "week", "team_name", "team", "weekly_attendance")],
+               by = c("year"="year", "week"="week", "other_team_name"="team_name", "other_team"="team")) %>%
+    inner_join(standings[c("year", "team", "team_name", 
+                           "margin_of_victory", "strength_of_schedule", "playoffs")],
+               by = c("year"="year", "other_team_name"="team_name", "other_team"="team")) %>%
+    mutate(playoffs = case_when(
+        playoffs=="Playoffs" ~ 1, 
+        playoffs=="No Playoffs" ~ 0)) %>%
+    rename(other_weekly_attendance=weekly_attendance, 
+           other_margin_of_victory=margin_of_victory,
+           other_strength_of_schedule=strength_of_schedule,
+           other_playoffs=playoffs) %>%
+    inner_join(attendance[c("year", "week", "team_name", "team", "weekly_attendance")],
+               by = join_by(year, week, team_name, team)) %>%
+    inner_join(standings[c("year", "team", "team_name", 
+                           "margin_of_victory", "strength_of_schedule", "playoffs")],
+               by = join_by(year, team_name, team)) %>%
+    mutate(playoffs = case_when(
+        playoffs=="Playoffs" ~ 1, 
+        playoffs=="No Playoffs" ~ 0))
+```
+
+```{r, fig.cap="Figure 5: The mean increase in attendance for home games compared with away games for each team", fig.width=7, fig.height=4}
+plot_df = is_win_df %>%
+    group_by(year, team_name, is_home) %>%
+    summarise(mean_weekly_attendance = mean(weekly_attendance), .groups="drop") %>%
+    pivot_wider(names_from = is_home, values_from = mean_weekly_attendance) %>%
+    mutate(weekly_attendance_diff = `1` - `0`) %>%
+    mutate(year = as.factor(year))
+
+ggplot(data=plot_df, aes(x=year, y=weekly_attendance_diff))+
+    geom_boxplot(aes(fill=year), show.legend = FALSE) +
+    coord_flip() +
+    labs(title = "The difference in mean weekly attendance between home and away games", 
+         subtitle = "The mean increase in attendance for home games compared with\n away games for each team",
+         caption = "Data Source: NFL Stadium Attendance (TidyTuesday 2020-02-04)",
+         x = "year",
+         y = "increase in attendance for home games") + 
+    theme_minimal() +
+    theme(axis.text.y = element_text(angle = 30, hjust = 1, size=6))
+```
+
+# Q3: Can we predict the weekly attendance?
+
+The exploratory analysis shows that whether the game is a home game can partially explain the variance in weekly attendance. To better model the weekly attendance, information about the opponent quality for each game as well as the team competence evaluated each year are also included. The lasso regression is used to predict the weekly attendance. A 80%/20% train/test split is performed, and the test MSE is used to evaluate the model.
+
+Sometimes, we might only have access to a subset of the data (main study). The remaining data may have restricted access and is only available through its summary statistics fitted on a reduced model (external study). Since the external study has a large sample size, the estimated model coefficients tend to be more accurate and have a smaller variance. Rather than fitting the model only on the main study with a small sample size, integrating summary statistics from external data with the main study may elevate the performance of a model. To illustrate how `htlgmm` can be used to do the data integration, the training set is randomly splitted into a main study (20%) and an external study (80%). The following three models are fitted and compared.
+
+1. Model 1: fit a full model using lasso regression on all training data.
+2. Model 2: fit a full model using lasso regression only on main study
+3. Model 3: fit a full model using lasso regression on the main study while using the summary statistics of a reduced model from the external study
+
+Model 1 results in the lowest test MSE as it has access to all the data. Compared with model 2 which only uses data in the main study, model 3 performs better as it borrows additional information from the external study. This shows that even if the model fitted on the external study is not the same as the full model used in the main study, we can still integrate its summary statistics into the model fitted on the main study.
+
+```{r}
+data_df = is_win_df %>%
+    mutate(is_home_win = case_when(
+        is_win == 1 & is_home == 1 ~ 1,
+        is_win == 0 & is_home == 0 ~ 1,
+        .default = 0
+    )) %>%
+    mutate(playoff_status = playoffs + other_playoffs) %>%
+    mutate(margin_of_victory_status = abs(margin_of_victory) + abs(other_margin_of_victory)) %>%
+    mutate(strength_of_schedule_status = abs(strength_of_schedule) + abs(other_strength_of_schedule)) %>%
+    select(is_home_win, playoff_status, margin_of_victory_status, strength_of_schedule_status,
+           margin_of_victory, strength_of_schedule, 
+           other_margin_of_victory, other_strength_of_schedule, 
+           weekly_attendance)
+```
+
+```{r}
+set.seed(1)
+data_df_scaled = as_tibble(scale(data_df))
+train_index = sample(1:nrow(data_df_scaled), size=round(nrow(data_df_scaled) * 0.8))
+train_df = data_df_scaled[train_index, ]
+test_df = data_df_scaled[-train_index, ]
+external_proportion = 0.8
+external_index = sample(train_index, size=round(length(train_index)* external_proportion))
+train_external_df = data_df_scaled[external_index, ]
+train_main_df = data_df_scaled[setdiff(train_index, external_index), ]
+
+# transform data into matrices
+train_X = as.matrix(train_df[, -9])
+train_y = as.matrix(train_df[, 9])
+train_main_X = as.matrix(train_main_df[, -9])
+train_main_y = as.matrix(train_main_df[, 9])
+train_external_X = as.matrix(train_external_df[, -9])
+train_external_y = as.matrix(train_external_df[, 9])
+test_X = as.matrix(test_df[, -9])
+```
+
+```{r}
+set.seed(1)
+
+# Case 1: we have access to all data
+all_lasso = cv.glmnet(train_X, train_y, alpha = 1)
+all_pred = predict(all_lasso, 
+                             newx = test_X,
+                   s = all_lasso$lambda.min)
+all_mse = mean((all_pred - test_df$weekly_attendance)^2)
+
+# Case 2: we have only a small sample of data
+internal_only_lasso = cv.glmnet(train_main_X, train_main_y, alpha = 1)
+internal_only_pred = predict(internal_only_lasso, 
+                             newx = test_X, s = internal_only_lasso$lambda.min)
+internal_only_mse = mean((internal_only_pred - test_df$weekly_attendance)^2)
+
+# Case 3: an external model is provided
+external_lm = lm(weekly_attendance~., data=train_external_df[c("margin_of_victory",
+                                                               "strength_of_schedule",
+                                                             "weekly_attendance")])
+study_info<-list()
+study_external = list(
+    Coeff=external_lm$coefficients[-1],
+    Covariance=vcov(external_lm)[-1,-1],
+    Sample_size=nrow(train_external_df))
+study_info[[1]] <- study_external
+Y = train_main_y
+Z = train_main_X[, c("margin_of_victory","strength_of_schedule")]
+W = subset(train_main_X, 
+           select = -which(colnames(train_main_X) %in% 
+                               c("margin_of_victory","strength_of_schedule")))
+res_htlgmm.cv<-cv.htlgmm(y=as.numeric(Y),
+                   Z=Z,
+                   W=W,
+                   A=1,
+                   study_info = study_info,
+                   family = "gaussian",
+                   penalty_type = "lasso",
+                   use_sparseC = FALSE,
+                   inference=FALSE,
+                   nfold=10)
+res_htlgmm<-htlgmm(y=as.numeric(Y),
+                   Z=Z,
+                   W=W,
+                   A=1,
+                   study_info = study_info,
+                   family = "gaussian",
+                   penalty_type = "lasso",
+                   use_sparseC = FALSE,
+                   inference=FALSE,
+                   fix_lambda = res_htlgmm.cv$lambda_min)
+htlgmm_cv_pred = test_X %*% res_htlgmm$beta[c(4, 5, 6, 7, 2, 3, 8, 9)] + res_htlgmm$beta[1]
+htlgmm_mse = mean((htlgmm_cv_pred - test_df$weekly_attendance)^2)
+
+# display the results
+cat(sprintf("MSE for model 1 (all):       %.4f\nMSE for model 2 (main only): %.4f\nMSE for model 3 (htlgmm):    %.4f", all_mse, internal_only_mse, htlgmm_mse))
+```
+# Summary
+
+The analysis aims to investigate factors affecting the weekly attendance of NFL games and build a lasso regression model to predict the weekly attendance. The exploratory analysis shows that the home field advantage exists, and a game at the home city tends to have a higher attendance. This city information, as well as information on the opponent quality and team's yearly competence ratings, are used to predict the weekly attendance. The test MSE on the scaled data is 0.977. Moreover, we explored the scenario when we only have access to the summary statistics from an external study with a large sample size and the individual level data from a main study with a small sample size. When the data integration method in `htglmm` is used to integrate the summary statistics with the main study, the test MSE decreases, which illustrates the effectiveness of the integration method. 
+
+
+# Functions used in the analysis
+- `purrr` package: `map2_int`, `pmap_dbl`
+- `dypyr` package: `select`, `mutate`, `rename`, `inner_join`, `case_when`, `group_by`, `summarize`, `filter`, `arrange`
+- `ggplot2` package: `geom_boxplot`, `geom_line`, `geom_point`, `facet_wrap`
+- `htlgmm` package: `htlgmm`, `htlgmm.cv`

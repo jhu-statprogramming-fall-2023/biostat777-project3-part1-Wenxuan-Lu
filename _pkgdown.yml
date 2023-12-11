@@ -1,0 +1,15 @@
+url: ~
+template:
+  bootstrap: 5
+  bootswatch: spacelab
+  bslib:
+    base_font: {google: "Roboto"}
+    heading_font: {google: "Roboto Slab"}
+    code-bg: "#2b2b2b"
+  theme: breeze-light
+home:
+  sidebar:
+    structure: [links, license, community, citation, authors, dev]
+  links:
+  - text: "GitHub"
+    href: "https://github.com/RuzhangZhao/htlgmm"
