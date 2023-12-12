@@ -2,7 +2,7 @@
 
 The package website is build for project 3 of the class 140.777 Statistical Programming Paradigms and Workflows.
 
-# Pakcage information
+# Package information
 
 Original GitHub Repo: [<https://github.com/RuzhangZhao/htlgmm>]
 
